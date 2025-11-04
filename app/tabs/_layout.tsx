@@ -5,7 +5,20 @@ import React from 'react'
 const TabsLayout = () => {
   return (
     //  tabBarShowLabel:false quita los label del tab
-    <Tabs screenOptions={{ tabBarActiveTintColor: 'blue'}}>
+    <Tabs screenOptions={{ tabBarActiveTintColor: 'white',
+      headerShown:false,
+      tabBarStyle:{
+        backgroundColor: 'blue',
+      }
+    }}>
+     <Tabs.Screen
+        name="(stack)"
+        options={{
+          title: 'Favoritos',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="footsteps-outline" color={color} />,
+        }}
+      />
+
       <Tabs.Screen
         name="home/index"
         options={{

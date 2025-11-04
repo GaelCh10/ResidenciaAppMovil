@@ -5,18 +5,22 @@ const StackLayout = () => {
     return <Stack screenOptions={{
         // headerShown:false, //oculta el header
         headerShadowVisible:false,
+        headerTitleStyle:{
+            color:'white',
+        },
         headerStyle:{
-            backgroundColor:'bg-primary'
+            backgroundColor:'blue'
         },
 
         contentStyle:{
             backgroundColor:'white',
+            
         }
     }}
     >
         <Stack.Screen
-            name='home/index'
-            options={{ title: 'Bienvenido, ', animation:'fade' }} />
+            name='home/index' 
+            options={{ title: 'Bienvenido, ', animation:'fade',  }} />
 
         <Stack.Screen
             name='profile/index'
