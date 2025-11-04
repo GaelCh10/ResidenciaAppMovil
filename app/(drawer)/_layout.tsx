@@ -1,6 +1,5 @@
 import customDrawer from '@/components/shared/customDrawer'
 import { Ionicons } from '@expo/vector-icons'
-import { Background } from '@react-navigation/elements'
 import { Drawer } from 'expo-router/drawer'
 import React from 'react'
 
@@ -9,6 +8,7 @@ const DrawerLayout = () => {
     <Drawer 
     drawerContent={customDrawer}
     screenOptions={{
+        headerShown:false,
         overlayColor:'rgba(0,0,0,0.4)',
         drawerActiveTintColor:'blue',
         headerShadowVisible:false,
@@ -16,6 +16,17 @@ const DrawerLayout = () => {
             backgroundColor:'white',
         },
     }}>
+         <Drawer.Screen
+        name="(tabs)" // This is the name of the page and must match the url from root
+        options={{
+          drawerLabel: 'Inicio',
+          title: 'LSM ',
+          drawerIcon:({color,size}) => (
+            <Ionicons name='book-outline'
+            size={size} color={color}/>
+          )
+        }}
+      />
       <Drawer.Screen
         name="user/index" // This is the name of the page and must match the url from root
         options={{
@@ -27,6 +38,8 @@ const DrawerLayout = () => {
           )
         }}
       />
+       
+
       <Drawer.Screen
         name="schedule/index" // This is the name of the page and must match the url from root
         options={{

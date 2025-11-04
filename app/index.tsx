@@ -4,7 +4,7 @@ import React from 'react'
 const App = () => {
     // return <Redirect href="/home" />
         // return <Redirect href="/tabs" />
-        return <Redirect href="/drawer" />
+        return <Redirect href="/home" />
 
         // <SafeAreaView>
         //     <View className='mt-10 mx-2.5 bg-secondary-200'>
