@@ -33,6 +33,10 @@ const HomeScreen = () => {
         <Link href="/products" asChild>
           <CustomButton color='primary' className='mb-3'>Cursos</CustomButton>
         </Link>
+
+        <CustomButton color='primary'>
+          Abrir Menu 
+        </CustomButton>
       </View>
 
 
