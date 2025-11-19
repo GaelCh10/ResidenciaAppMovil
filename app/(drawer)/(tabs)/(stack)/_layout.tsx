@@ -1,40 +1,76 @@
-import { Stack } from 'expo-router'
-import React from 'react'
-
+import { Ionicons } from '@expo/vector-icons';
+import { DrawerActions } from '@react-navigation/native';
+import { router, Stack, useNavigation } from 'expo-router';
 const StackLayout = () => {
-    return <Stack screenOptions={{
-        // headerShown:false, //oculta el header
-        headerShadowVisible:false,
-        headerTitleStyle:{
-            color:'white',
-        },
-        headerStyle:{
-            backgroundColor:'blue'
-        },
+    const navigation = useNavigation();
 
-        contentStyle:{
-            backgroundColor:'white',
-            
+    const onHeaderLeftClick = (canGoBack?: boolean) => {
+        if (canGoBack) {
+            router.back()
+            return;
+
+        } else {
+            navigation.dispatch(DrawerActions.toggleDrawer());
         }
-    }}
-    >
-        <Stack.Screen
-            name='home/index' 
-            options={{ title: 'Bienvenido, ', animation:'fade',  }} />
+    };
 
-        <Stack.Screen
-            name='profile/index'
-            options={{ title: 'Perfil', animation:'fade' }} />
 
-        <Stack.Screen
-            name='settings/index'
-            options={{ title: 'Ajustes', animation:'fade' }} />
+    return (
+        <Stack
+            screenOptions={{
+                // headerShown: false,
+                headerShadowVisible: false,
+                /* headerTitleStyle:{
+                    
+                },
+ */
+                headerTintColor: '#fff',
+                headerStyle: {
+                    backgroundColor: 'blue',
+                },
 
-        <Stack.Screen
-            name='products/index'
-            options={{ title: 'Cursos', animation:'fade'}} />
+                contentStyle: {
+                    backgroundColor: 'white',
 
-    </Stack>
-}
+                },
 
-export default StackLayout
+                headerLeft: ({ tintColor, canGoBack }) => (
+                    <Ionicons
+                        name={canGoBack ? 'arrow-back-outline' : 'grid-outline'}
+                        className="mr-5"
+                        color={'#fff'}
+                        size={20}
+                        onPress={() => onHeaderLeftClick(canGoBack)}
+                    />
+                ),
+            }}
+        >
+            <Stack.Screen
+                name="home/index"
+                options={{
+                    title: 'Inicio',
+                }}
+            />
+            <Stack.Screen
+                name="cursos/index"
+                options={{
+                    title: 'Cursos LSM',
+                }}
+            />
+
+            <Stack.Screen
+                name="profile/index"
+                options={{
+                    title: 'Cursos Español Gestuno',
+                }}
+            />
+            <Stack.Screen
+                name="settings/index"
+                options={{
+                    title: 'Ajustes Pantalla',
+                }}
+            />
+        </Stack>
+    );
+};
+export default StackLayout;

@@ -6,31 +6,34 @@ const TabsLayout = () => {
   return (
     //  tabBarShowLabel:false quita los label del tab
     <Tabs screenOptions={{ tabBarActiveTintColor: 'white',
-      headerShown:false,
+      
       tabBarStyle:{
         backgroundColor: 'blue',
       }
     }}>
      <Tabs.Screen
         name="(stack)"
+        
         options={{
-          title: 'Favoritos',
+          title: 'Cursos',
+          headerShown:false,
           tabBarIcon: ({ color }) => <Ionicons size={28} name="footsteps-outline" color={color} />,
         }}
       />
 
       <Tabs.Screen
-        name="home/index"
+        name="practicar/index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="home-outline" color={color} />,
+          title: 'Practicar',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="hand-right-outline" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="favorites/index"
+        name="foro/index"
+        
         options={{
-          title: 'Favoritos',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="heart-outline" color={color} />,
+          title: 'Foro',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="chatbox-outline" color={color} />,
         }}
       />
     </Tabs>

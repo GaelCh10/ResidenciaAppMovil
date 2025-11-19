@@ -1,12 +1,12 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-const FavoritesScreen = () => {
+const HomeScreen = () => {
   return (
     <View>
-      <Text>FavoritesScreen</Text>
+      <Text>Pagina de la edu virtual</Text>
     </View>
   )
 }
 
-export default FavoritesScreen
+export default HomeScreen
