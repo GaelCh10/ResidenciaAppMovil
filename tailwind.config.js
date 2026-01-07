@@ -22,6 +22,7 @@ module.exports = {
         'work-black':['TitilliumWeb-Black','Titillium-Web'],
         'work-light':['TitilliumWeb-Light','Titillium-Web'],
         'work-regular':['TitilliumWeb-Regular','Titillium-Web'],
+        'lsm-regular':['LsmVulpy-Regular','LsmVulpy'],
       }
     },
   },

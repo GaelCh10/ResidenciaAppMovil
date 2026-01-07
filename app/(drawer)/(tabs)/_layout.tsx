@@ -4,19 +4,19 @@ import React from 'react'
 
 const TabsLayout = () => {
   return (
-    //  tabBarShowLabel:false quita los label del tab
-    <Tabs screenOptions={{ tabBarActiveTintColor: 'white',
-      
-      tabBarStyle:{
+    
+    <Tabs screenOptions={{
+      tabBarActiveTintColor: 'white',
+      tabBarShowLabel:true,//quita los label del tab
+      tabBarStyle: {
         backgroundColor: 'blue',
       }
     }}>
-     <Tabs.Screen
+      <Tabs.Screen
         name="(stack)"
-        
         options={{
           title: 'Cursos',
-          headerShown:false,
+          headerShown: false,
           tabBarIcon: ({ color }) => <Ionicons size={28} name="footsteps-outline" color={color} />,
         }}
       />
@@ -30,12 +30,43 @@ const TabsLayout = () => {
       />
       <Tabs.Screen
         name="foro/index"
-        
+
         options={{
           title: 'Foro',
           tabBarIcon: ({ color }) => <Ionicons size={28} name="chatbox-outline" color={color} />,
         }}
       />
+
+      <Tabs.Screen
+        name='juegos/index'
+        options={{
+          title: 'Juegos',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name='game-controller-outline' color={color} />
+        }}
+      />
+      <Tabs.Screen
+        name='diccionario/index'
+        options={{
+          title: 'Diccionario',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name='glasses-outline' color={color} />
+        }}
+      />  
+
+      <Tabs.Screen
+        name='user/index'
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name='person-circle-outline' color={color} />
+        }}
+      /> 
+
+      <Tabs.Screen
+        name='traductor/index'
+        options={{
+          title: 'Traductor',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name='language-outline' color={color} />
+        }}
+      />  
     </Tabs>
   )
 }
