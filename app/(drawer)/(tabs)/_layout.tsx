@@ -4,39 +4,22 @@ import React from 'react'
 
 const TabsLayout = () => {
   return (
-    
     <Tabs screenOptions={{
+      headerShown: false, // <--- IMPORTANTE: Esto quita el doble encabezado
       tabBarActiveTintColor: 'white',
-      tabBarShowLabel:true,//quita los label del tab
-      tabBarStyle: {
-        backgroundColor: 'blue',
-      }
+      tabBarShowLabel: false, 
+      tabBarStyle: { backgroundColor: 'blue' }
     }}>
+      {/* 1. Cursos (Stack principal) */}
       <Tabs.Screen
         name="(stack)"
         options={{
           title: 'Cursos',
-          headerShown: false,
           tabBarIcon: ({ color }) => <Ionicons size={28} name="footsteps-outline" color={color} />,
         }}
       />
 
-      <Tabs.Screen
-        name="practicar/index"
-        options={{
-          title: 'Practicar',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="hand-right-outline" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="foro/index"
-
-        options={{
-          title: 'Foro',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="chatbox-outline" color={color} />,
-        }}
-      />
-
+      {/* 2. Juegos */}
       <Tabs.Screen
         name='juegos/index'
         options={{
@@ -44,14 +27,17 @@ const TabsLayout = () => {
           tabBarIcon: ({ color }) => <Ionicons size={28} name='game-controller-outline' color={color} />
         }}
       />
-      <Tabs.Screen
-        name='diccionario/index'
-        options={{
-          title: 'Diccionario',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name='glasses-outline' color={color} />
-        }}
-      />  
 
+      {/* 3. Foro */}
+      <Tabs.Screen
+        name="foro/index"
+        options={{
+          title: 'Foro',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="chatbox-outline" color={color} />,
+        }}
+      />
+
+      {/* 4. Perfil */}
       <Tabs.Screen
         name='user/index'
         options={{
@@ -59,16 +45,7 @@ const TabsLayout = () => {
           tabBarIcon: ({ color }) => <Ionicons size={28} name='person-circle-outline' color={color} />
         }}
       /> 
-
-      <Tabs.Screen
-        name='traductor/index'
-        options={{
-          title: 'Traductor',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name='language-outline' color={color} />
-        }}
-      />  
     </Tabs>
   )
 }
-
 export default TabsLayout
