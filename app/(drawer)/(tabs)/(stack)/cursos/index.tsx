@@ -1,14 +1,19 @@
+import { useCategoriasOffline } from "@/src/hooks/useOfflineData";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-// IMPORTANTE: Usamos el hook offline
-import { useCategoriasOffline } from "@/src/hooks/useOfflineData";
 
 const CursosPantalla = () => {
   // EL HOOK HACE TODO EL TRABAJO (Carga, Loading y Sincronización)
   const { data: categorias, loading } = useCategoriasOffline();
-  
+
   const [hover, setHover] = useState<string | null>(null);
 
   if (loading) {
@@ -31,7 +36,9 @@ const CursosPantalla = () => {
         renderItem={({ item: categoria }) => (
           <View className="mb-5">
             <TouchableOpacity
-              onPress={() => setHover(hover === categoria.id ? null : categoria.id)}
+              onPress={() =>
+                setHover(hover === categoria.id ? null : categoria.id)
+              }
               className="bg-primary rounded-3xl py-3 px-5"
             >
               <Text className="text-white text-lg text-center font-work-black">

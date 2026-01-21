@@ -1,12 +1,11 @@
+import * as SQLite from "expo-sqlite";
 
-import * as SQLite from 'expo-sqlite';
-
-const db = SQLite.openDatabaseSync('lsm_offline.db');
+const db = SQLite.openDatabaseSync("lsm_offline.db");
 
 export const initDB = async () => {
   try {
     console.log("♻️ Reiniciando base de datos...");
-    
+
     await db.execAsync(`
       DROP TABLE IF EXISTS courses;
       DROP TABLE IF EXISTS levels;
@@ -76,6 +75,16 @@ export const initDB = async () => {
         word TEXT NOT NULL,
         media_url TEXT,
         media_type TEXT
+      );
+
+    
+      CREATE TABLE IF NOT EXISTS user_progress (
+        id TEXT PRIMARY KEY NOT NULL,
+        user_id TEXT NOT NULL,
+        course_id TEXT NOT NULL,
+        is_completed INTEGER DEFAULT 0, -- SQLite usa 0/1 para booleans
+        quiz_score INTEGER DEFAULT 0,
+        last_accessed_at TEXT
       );
     `);
     console.log("Base de datos lista y actualizada");

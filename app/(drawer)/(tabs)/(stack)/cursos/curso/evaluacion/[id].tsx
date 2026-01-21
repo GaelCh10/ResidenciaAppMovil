@@ -1,28 +1,43 @@
-import SmartMedia from '@/components/shared/SmartMedia';
-import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SmartMedia from "@/components/shared/SmartMedia";
+import { Ionicons } from "@expo/vector-icons";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+import { SafeAreaView } from "react-native-safe-area-context";
+
 // IMPORTANTE: Hook offline
-import { usePreguntasOffline } from '@/src/hooks/useOfflineData';
+import { usePreguntasOffline } from "@/src/hooks/useOfflineData";
+import { supabase } from "@/src/lib/supabase";
+import { guardarProgresoCurso } from "@/src/services/cursos";
 
 export default function EvaluacionPantalla() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
   // Usamos el Hook
-  const { data: preguntas, loading } = usePreguntasOffline(id ? id.toString() : '');
+  const { data: preguntas, loading } = usePreguntasOffline(
+    id ? id.toString() : "",
+  );
 
   const [indiceActual, setIndiceActual] = useState(0);
   const [puntaje, setPuntaje] = useState(0);
-  const [respuestaSeleccionada, setRespuestaSeleccionada] = useState<string | null>(null);
+  const [respuestaSeleccionada, setRespuestaSeleccionada] = useState<
+    string | null
+  >(null);
   const [mostrarResultado, setMostrarResultado] = useState(false);
 
   const manejarRespuesta = (opcion: string) => {
     setRespuestaSeleccionada(opcion);
     const esCorrecta = opcion === preguntas[indiceActual].correct_answer;
-    
+
     if (esCorrecta) {
       setPuntaje(puntaje + 1);
     }
@@ -38,9 +53,31 @@ export default function EvaluacionPantalla() {
     }, 1000);
   };
 
-  const terminarExamen = (puntajeFinal: number) => {
-    // Hack visual: actualizamos el estado para que el modal muestre el dato correcto
-    setPuntaje(puntajeFinal); 
+  const terminarExamen = async (puntajeFinal: number) => {
+    const porcentaje = (puntajeFinal / preguntas.length) * 100;
+
+    if (porcentaje >= 80) {
+      try {
+        // 1. OBTENER EL USUARIO REAL
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          // 2. PASAR EL ID REAL
+          await guardarProgresoCurso(user.id, id.toString(), puntajeFinal);
+        } else {
+          console.warn(
+            "No hay usuario logueado (Offline), no se guardó el progreso en la nube.",
+          );
+          // Opcional: Aquí podrías guardar con un ID temporal si quisieras lógica offline compleja para usuarios no logueados
+        }
+      } catch (error) {
+        console.error("Error al obtener usuario:", error);
+      }
+    }
+
+    setPuntaje(puntajeFinal);
     setMostrarResultado(true);
   };
 
@@ -58,7 +95,10 @@ export default function EvaluacionPantalla() {
         <Text className="text-primary text-lg text-center font-work-bold">
           No hay preguntas configuradas para este curso aún.
         </Text>
-        <TouchableOpacity onPress={() => router.back()} className="mt-4 bg-primary px-6 py-3 rounded-xl">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="mt-4 bg-primary px-6 py-3 rounded-xl"
+        >
           <Text className="text-white">Volver</Text>
         </TouchableOpacity>
       </View>
@@ -71,7 +111,13 @@ export default function EvaluacionPantalla() {
 
   return (
     <SafeAreaView className="flex-1 bg-secondary-200 px-4">
-      <Stack.Screen options={{ title: 'Evaluación', headerBackTitle: 'Curso', headerShown: true }} />
+      <Stack.Screen
+        options={{
+          title: "Evaluación",
+          headerBackTitle: "Curso",
+          headerShown: true,
+        }}
+      />
 
       {/* Barra de Progreso */}
       <View className="flex-row items-center h-2 bg-gray-200 rounded-full mt-4 mb-6 overflow-hidden">
@@ -129,7 +175,11 @@ export default function EvaluacionPantalla() {
                 </Text>
                 {respuestaSeleccionada === opcion && (
                   <Ionicons
-                    name={opcion === preguntaActual.correct_answer ? "checkmark-circle" : "close-circle"}
+                    name={
+                      opcion === preguntaActual.correct_answer
+                        ? "checkmark-circle"
+                        : "close-circle"
+                    }
                     size={24}
                     color="white"
                   />
@@ -141,7 +191,11 @@ export default function EvaluacionPantalla() {
       </ScrollView>
 
       {/* Modal Resultados */}
-      <Modal visible={mostrarResultado} animationType="slide" transparent={true}>
+      <Modal
+        visible={mostrarResultado}
+        animationType="slide"
+        transparent={true}
+      >
         <View className="flex-1 bg-black/50 justify-center items-center px-4">
           <View className="bg-white w-full rounded-3xl p-8 items-center shadow-lg">
             <Ionicons
@@ -154,7 +208,9 @@ export default function EvaluacionPantalla() {
               {aprobado ? "¡Felicidades!" : "Inténtalo de nuevo"}
             </Text>
             <Text className="text-gray-500 text-center mb-6 font-work-regular">
-              {aprobado ? "Has completado este curso." : "Necesitas un 80% para aprobar."}
+              {aprobado
+                ? "Has completado este curso."
+                : "Necesitas un 80% para aprobar."}
             </Text>
             <View className="bg-secondary-100 px-6 py-4 rounded-2xl mb-8">
               <Text className="text-4xl font-work-black text-primary text-center">
@@ -162,10 +218,12 @@ export default function EvaluacionPantalla() {
               </Text>
             </View>
             <TouchableOpacity
-              onPress={() => router.replace('/cursos')}
+              onPress={() => router.replace("/cursos")}
               className="bg-primary w-full py-4 rounded-2xl mb-3"
             >
-              <Text className="text-white text-center font-work-bold text-lg">Finalizar</Text>
+              <Text className="text-white text-center font-work-bold text-lg">
+                Finalizar
+              </Text>
             </TouchableOpacity>
             {!aprobado && (
               <TouchableOpacity
@@ -176,7 +234,9 @@ export default function EvaluacionPantalla() {
                   setMostrarResultado(false);
                 }}
               >
-                <Text className="text-primary font-work-bold mt-2">Reintentar</Text>
+                <Text className="text-primary font-work-bold mt-2">
+                  Reintentar
+                </Text>
               </TouchableOpacity>
             )}
           </View>
