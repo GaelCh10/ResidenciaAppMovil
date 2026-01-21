@@ -1,100 +1,134 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
 import { supabase } from '@/src/lib/supabase';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
-  const router = useRouter();
   
-  // Estados del formulario
-  const [email, setEmail] = useState('');
+  // Formulario
+  const [identifier, setIdentifier] = useState(''); // Puede ser email o username
+  const [emailRegister, setEmailRegister] = useState(''); // Exclusivo para registro
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState(''); // Nuevo campo
+  const [username, setUsername] = useState('');
+  
   const [loading, setLoading] = useState(false);
 
-  // Estados de la vista (Modos)
+  // Modos y Modales
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isAdminMode, setIsAdminMode] = useState(false); // Nuevo modo Admin
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // Modal Registro Éxito
+  const [showForgotModal, setShowForgotModal] = useState(false); // Modal Olvidé Contraseña
+  const [recoveryEmail, setRecoveryEmail] = useState(''); // Email para recuperar
 
-  const handleAuth = async () => {
+  // --- LÓGICA DE LOGIN (Inteligente) ---
+  const handleLogin = async () => {
     setLoading(true);
     try {
-      if (isRegistering) {
-        // --- LÓGICA DE REGISTRO ---
-        if (!username.trim()) throw new Error("El nombre de usuario es obligatorio");
-        
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            // Aquí mandamos los datos extra para que el Trigger los guarde en la BD
-            data: { 
-              full_name: username, // Usamos el mismo para nombre completo por simplicidad
-              username: username 
-            } 
-          }
-        });
-        if (error) throw error;
-        Alert.alert('Registro exitoso', 'Verifica tu correo o inicia sesión.');
-        setIsRegistering(false);
+      let emailToLogin = identifier.trim();
 
-      } else {
-        // --- LÓGICA DE LOGIN ---
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
+      // Si NO parece un correo (no tiene @), asumimos que es un Username
+      if (!emailToLogin.includes('@')) {
+        // Usamos la función SQL que creamos para buscar el correo real
+        const { data: foundEmail, error: lookupError } = await supabase
+          .rpc('get_email_by_username', { username_input: emailToLogin });
 
-        // Si el usuario intentó entrar por el modo "Administrador", verificamos su rol
-        if (isAdminMode && data.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
-
-          if (profile?.role !== 'admin') {
-            // Si no es admin, lo sacamos inmediatamente
-            await supabase.auth.signOut();
-            throw new Error("No tienes permisos de Administrador.");
-          }
+        if (lookupError || !foundEmail) {
+          throw new Error("Usuario no encontrado. Verifica que esté escrito correctamente.");
         }
-        
-        // Si todo está bien, el _layout.tsx detectará la sesión y redirigirá
+        emailToLogin = foundEmail;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailToLogin,
+        password,
+      });
+      if (error) throw error;
+
+      // Verificación extra si es Admin
+      if (isAdminMode && data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+        if (profile?.role !== 'admin') {
+          await supabase.auth.signOut();
+          throw new Error("No tienes permisos de Administrador.");
+        }
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert('Error de inicio de sesión', error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Función para cambiar entre modos limpiando errores visuales
-  const toggleMode = (mode: 'register' | 'admin' | 'login') => {
-    if (mode === 'register') {
-      setIsRegistering(true);
-      setIsAdminMode(false);
-    } else if (mode === 'admin') {
-      setIsRegistering(false);
-      setIsAdminMode(true);
-    } else {
-      // Login normal
-      setIsRegistering(false);
-      setIsAdminMode(false);
+  // --- LÓGICA DE REGISTRO ---
+  const handleRegister = async () => {
+    if (!username.trim() || !emailRegister.trim() || !password.trim()) {
+      return Alert.alert("Faltan datos", "Por favor llena todos los campos");
     }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: emailRegister,
+        password,
+        options: {
+          data: { 
+            full_name: username, 
+            username: username 
+          } 
+        }
+      });
+      if (error) throw error;
+      
+      // ÉXITO: Mostrar Modal bonito
+      setShowSuccessModal(true);
+      setIsRegistering(false); // Regresar al login de fondo
+      setIdentifier(emailRegister); // Prellenar el campo
+    } catch (error: any) {
+      Alert.alert('Error de registro', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- LÓGICA DE RECUPERACIÓN ---
+  const handleRecovery = async () => {
+    if (!recoveryEmail.includes('@')) {
+      return Alert.alert("Error", "Ingresa un correo válido");
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
+        // Si usas Deep Linking, aquí iría tu redirectUrl. Por defecto Supabase manda una web.
+      });
+      if (error) throw error;
+      Alert.alert("Correo enviado", "Revisa tu bandeja de entrada para restablecer tu contraseña.");
+      setShowForgotModal(false);
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Toggle entre modos
+  const toggleMode = (mode: 'register' | 'admin' | 'login') => {
+    setIdentifier(''); setPassword(''); setUsername(''); setEmailRegister('');
+    if (mode === 'register') { setIsRegistering(true); setIsAdminMode(false); }
+    else if (mode === 'admin') { setIsRegistering(false); setIsAdminMode(true); }
+    else { setIsRegistering(false); setIsAdminMode(false); }
   };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
           
+          {/* LOGO E INTRO */}
           <View className="items-center mb-8">
             <Ionicons 
               name={isAdminMode ? "shield-checkmark" : "school"} 
@@ -102,90 +136,153 @@ export default function LoginScreen() {
               color={isAdminMode ? "#EA580C" : "#2563EB"} 
             />
             <Text className={`text-4xl font-work-black mb-2 ${isAdminMode ? 'text-orange-600' : 'text-primary'}`}>
-              {isAdminMode ? 'Acceso Admin' : 'Shebbey App'}
+              {isAdminMode ? 'Acceso Admin' : 'LSM App'}
             </Text>
             <Text className="text-gray-500 font-work-regular text-center">
-              {isAdminMode 
-                ? 'Gestión de contenido y usuarios' 
-                : 'Aprende Lengua de Señas Mexicana'}
+              {isAdminMode ? 'Gestión de contenido' : 'Aprende Lengua de Señas Mexicana'}
             </Text>
           </View>
 
           <Text className="text-xl font-bold text-gray-800 mb-6">
-            {isRegistering ? 'Crear Cuenta Nueva' : isAdminMode ? 'Hola, Administrador' : 'Iniciar Sesión'}
+            {isRegistering ? 'Crear Cuenta' : isAdminMode ? 'Hola, Administrador' : 'Iniciar Sesión'}
           </Text>
 
+          {/* FORMULARIO */}
           <View className="space-y-4">
             
-            {/* CAMPO NOMBRE DE USUARIO (Solo en Registro) */}
+            {/* Solo en Registro: Username y Email separados */}
             {isRegistering && (
+              <>
+                <TextInput
+                  placeholder="Nombre de Usuario (Único)"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  className="bg-gray-100 p-4 rounded-xl text-primary border border-gray-200"
+                />
+                <TextInput
+                  placeholder="Correo Electrónico"
+                  value={emailRegister}
+                  onChangeText={setEmailRegister}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  className="bg-gray-100 p-4 rounded-xl text-primary border border-gray-200"
+                />
+              </>
+            )}
+
+            {/* Solo en Login: Campo Único (Usuario o Email) */}
+            {!isRegistering && (
               <TextInput
-                placeholder="Nombre de usuario"
-                value={username}
-                onChangeText={setUsername}
+                placeholder={isAdminMode ? "Correo de Administrador" : "Correo o Nombre de Usuario"}
+                value={identifier}
+                onChangeText={setIdentifier}
+                autoCapitalize="none"
                 className="bg-gray-100 p-4 rounded-xl text-primary border border-gray-200"
               />
             )}
 
             <TextInput
-              placeholder="Correo electrónico"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              className="bg-gray-100 p-4 rounded-xl text-primary border border-gray-200"
-            />
-            
-            <TextInput
               placeholder="Contraseña"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              className="bg-gray-100 p-4 rounded-xl text-primary border border-gray-200 mb-4"
+              className="bg-gray-100 p-4 rounded-xl text-primary border border-gray-200"
             />
 
+            {/* Link Olvidé Contraseña (Solo en Login) */}
+            {!isRegistering && (
+              <TouchableOpacity onPress={() => setShowForgotModal(true)} className="self-end">
+                <Text className="text-blue-500 font-work-medium text-sm">¿Olvidaste tu contraseña?</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity 
-              onPress={handleAuth}
+              onPress={isRegistering ? handleRegister : handleLogin}
               disabled={loading}
-              className={`py-4 rounded-xl items-center shadow-lg ${isAdminMode ? 'bg-orange-600' : 'bg-primary'}`}
+              className={`py-4 rounded-xl items-center shadow-lg mt-4 ${isAdminMode ? 'bg-orange-600' : 'bg-primary'}`}
             >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
+              {loading ? <ActivityIndicator color="white" /> : (
                 <Text className="text-white font-bold text-lg">
                   {isRegistering ? 'Registrarse' : 'Entrar'}
                 </Text>
               )}
             </TouchableOpacity>
 
-            {/* LINKS DE NAVEGACIÓN ENTRE MODOS */}
+            {/* NAVEGACIÓN INFERIOR */}
             <View className="mt-6 space-y-3">
-              
-              {/* Link 1: Toggle Registro vs Login Normal */}
               <TouchableOpacity onPress={() => toggleMode(isRegistering ? 'login' : 'register')}>
                 <Text className="text-center text-gray-500">
-                  {isRegistering 
-                    ? '¿Ya tienes cuenta? Inicia sesión' 
-                    : '¿No tienes cuenta? Regístrate aquí'}
+                  {isRegistering ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate aquí'}
                 </Text>
               </TouchableOpacity>
 
-              {/* Link 2: Toggle Admin vs Login Normal (Solo visible si no estamos registrando) */}
               {!isRegistering && (
                 <TouchableOpacity onPress={() => toggleMode(isAdminMode ? 'login' : 'admin')}>
                   <Text className={`text-center font-bold mt-2 ${isAdminMode ? 'text-primary' : 'text-gray-400 text-xs'}`}>
-                    {isAdminMode 
-                      ? '← Volver al acceso de Estudiantes' 
-                      : 'Soy Administrador'}
+                    {isAdminMode ? '← Volver a Estudiantes' : 'Soy Administrador'}
                   </Text>
                 </TouchableOpacity>
               )}
-
             </View>
           </View>
-
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* --- MODAL 1: ÉXITO REGISTRO --- */}
+      <Modal visible={showSuccessModal} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white p-8 rounded-3xl w-full items-center shadow-2xl">
+            <Ionicons name="mail-unread-outline" size={60} color="#2563EB" />
+            <Text className="text-2xl font-bold text-primary mt-4 text-center">¡Casi listo!</Text>
+            <Text className="text-gray-600 text-center mt-2 mb-6 leading-6">
+              Hemos enviado un correo a <Text className="font-bold">{emailRegister}</Text>.{"\n"}
+              Por favor confirma tu cuenta para poder iniciar sesión.
+            </Text>
+            <TouchableOpacity 
+              onPress={() => setShowSuccessModal(false)}
+              className="bg-primary w-full py-3 rounded-xl"
+            >
+              <Text className="text-white text-center font-bold">Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- MODAL 2: RECUPERAR CONTRASEÑA --- */}
+      <Modal visible={showForgotModal} transparent animationType="slide">
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white p-6 rounded-t-3xl shadow-2xl">
+            <View className="flex-row justify-between items-center mb-4">
+                <Text className="text-xl font-bold text-gray-800">Recuperar Cuenta</Text>
+                <TouchableOpacity onPress={() => setShowForgotModal(false)}>
+                    <Ionicons name="close-circle" size={30} color="#ccc" />
+                </TouchableOpacity>
+            </View>
+            <Text className="text-gray-500 mb-4">Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</Text>
+            
+            <TextInput
+              placeholder="Tu correo electrónico"
+              value={recoveryEmail}
+              onChangeText={setRecoveryEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              className="bg-gray-100 p-4 rounded-xl text-primary border border-gray-200 mb-4"
+            />
+
+            <TouchableOpacity 
+              onPress={handleRecovery}
+              disabled={loading}
+              className="bg-primary w-full py-4 rounded-xl items-center"
+            >
+              {loading ? <ActivityIndicator color="white" /> : (
+                <Text className="text-white font-bold">Enviar Correo</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }

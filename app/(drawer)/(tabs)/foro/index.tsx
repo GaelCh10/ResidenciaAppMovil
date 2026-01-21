@@ -2,7 +2,8 @@ import { crearPost, obtenerPosts, Post, toggleLike } from '@/src/services/foro';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import React, { useEffect, useState } from 'react';
+import { router,useFocusEffect } from 'expo-router';
+import React, { useEffect, useState,useCallback } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Modal, RefreshControl, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,9 +26,9 @@ export default function ForoScreen() {
     }
   };
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     cargarDatos();
-  }, []);
+  }, []));
 
   // Función para manejar el like visualmente rápido
   const manejarLike = async (post: Post) => {
@@ -36,9 +37,9 @@ export default function ForoScreen() {
     const nuevosLikes = nuevoEstadoLike ? post.likes_count + 1 : post.likes_count - 1;
 
     // Actualizamos la lista local
-    setPosts(prev => prev.map(p => 
-      p.id === post.id 
-        ? { ...p, user_has_liked: nuevoEstadoLike, likes_count: nuevosLikes } 
+    setPosts(prev => prev.map(p =>
+      p.id === post.id
+        ? { ...p, user_has_liked: nuevoEstadoLike, likes_count: nuevosLikes }
         : p
     ));
 
@@ -48,7 +49,7 @@ export default function ForoScreen() {
     } catch (error) {
       // Si falla, revertimos el cambio (Rollback)
       console.error("Error like", error);
-      cargarDatos(); 
+      cargarDatos();
     }
   };
 
@@ -60,8 +61,11 @@ export default function ForoScreen() {
       setNuevoTexto("");
       setModalVisible(false);
       cargarDatos(); // Recargar lista
-    } catch (error) {
-      Alert.alert("Error", "No se pudo publicar");
+    } catch (error: any) {
+      console.error("Error creando post:", error);
+      console.error("detalles:", error.message, error.details, error.hint, error.code);
+
+      Alert.alert("Error, no se pudo publicar", error.message || "Error desconocido");
     } finally {
       setEnviando(false);
     }
@@ -71,8 +75,8 @@ export default function ForoScreen() {
     <View className="bg-white p-4 rounded-3xl mb-4 shadow-sm border border-gray-100 mx-2">
       {/* Header */}
       <View className="flex-row items-center mb-3">
-        <Image 
-          source={{ uri: item.profiles?.avatar_url || 'https://via.placeholder.com/50' }} 
+        <Image
+          source={{ uri: item.profiles?.avatar_url || 'https://via.placeholder.com/50' }}
           className="w-10 h-10 rounded-full bg-gray-200"
         />
         <View className="ml-3">
@@ -92,21 +96,37 @@ export default function ForoScreen() {
 
       {/* Footer / Acciones */}
       <View className="flex-row items-center border-t border-gray-100 pt-3">
-        <TouchableOpacity 
+        <TouchableOpacity
           className="flex-row items-center mr-6 px-2 py-1"
           onPress={() => manejarLike(item)}
         >
-          <Ionicons 
-            name={item.user_has_liked ? "heart" : "heart-outline"} 
-            size={22} 
-            color={item.user_has_liked ? "#EF4444" : "#64748B"} 
+          <Ionicons
+            name={item.user_has_liked ? "heart" : "heart-outline"}
+            size={22}
+            color={item.user_has_liked ? "#EF4444" : "#64748B"}
           />
           <Text className={`ml-2 font-work-medium ${item.user_has_liked ? 'text-red-500' : 'text-gray-500'}`}>
             {item.likes_count}
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity className="flex-row items-center px-2 py-1">
+
+        <TouchableOpacity
+          className="flex-row items-center px-2 py-1"
+          onPress={() => {
+            // NAVEGACIÓN A DETALLE
+            router.push({
+              pathname: "/(drawer)/(tabs)/foro/[id]", // Ruta dinámica
+              params: {
+                id: item.id,
+                content: item.content,
+                authorName: item.profiles?.full_name,
+                authorAvatar: item.profiles?.avatar_url,
+                time: item.created_at, // Pasamos fecha cruda
+                likes: item.likes_count
+              }
+            });
+          }}
+        >
           <Ionicons name="chatbubble-outline" size={20} color="#64748B" />
           <Text className="ml-2 text-gray-500 font-work-medium">Comentar</Text>
         </TouchableOpacity>
@@ -138,7 +158,7 @@ export default function ForoScreen() {
       />
 
       {/* BOTÓN FLOTANTE (FAB) PARA NUEVO POST */}
-      <TouchableOpacity 
+      <TouchableOpacity
         className="absolute bottom-6 right-6 bg-primary w-14 h-14 rounded-full items-center justify-center shadow-lg"
         onPress={() => setModalVisible(true)}
       >
@@ -156,7 +176,7 @@ export default function ForoScreen() {
               </TouchableOpacity>
             </View>
 
-            <TextInput 
+            <TextInput
               className="bg-gray-50 p-4 rounded-2xl text-lg font-work-regular text-gray-800 min-h-[150px] mb-6"
               placeholder="¿Qué aprendiste hoy en LSM?"
               multiline
@@ -166,7 +186,7 @@ export default function ForoScreen() {
               autoFocus
             />
 
-            <TouchableOpacity 
+            <TouchableOpacity
               className={`w-full py-4 rounded-2xl flex-row justify-center items-center ${nuevoTexto.trim() ? 'bg-primary' : 'bg-gray-300'}`}
               onPress={publicarPost}
               disabled={!nuevoTexto.trim() || enviando}

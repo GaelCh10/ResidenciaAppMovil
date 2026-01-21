@@ -30,11 +30,11 @@ const HomeScreen = () => {
 
           Cursos Español Gestuno
         </CustomButton>
-        {/* mismo funcionamiento que el custom button */}
+        {/* mismo funcionamiento que el custom button 
         <Link href="/settings" asChild>
           <CustomButton color='primary' className='mb-3'>Cursos</CustomButton>
         </Link>
-
+      */}
         {/* <CustomButton variant='text-only' color='primary'
           onPress={() => router.push('/settings')}
           className='mb-3'>

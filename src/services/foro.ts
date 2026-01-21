@@ -12,20 +12,24 @@ export interface Post {
 
 // 1. Obtener Posts
 export const obtenerPosts = async () => {
-  // Obtenemos el ID del usuario actual para saber si dio like
   const { data: { session } } = await supabase.auth.getSession();
   const currentUserId = session?.user.id;
 
+  // AQUÍ ESTÁ EL CAMBIO CLAVE:
+  // Usamos la sintaxis: tabla!nombre_del_constraint (columnas)
   const { data, error } = await supabase
     .from('posts')
     .select(`
-  *,
-  profiles!posts_user_id_fkey (full_name, avatar_url), 
-  post_likes (user_id) 
-`)
+      *,
+      profiles!posts_author_fkey (full_name, avatar_url),
+      post_likes!post_likes_post_fkey (user_id)
+    `)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error detallado obteniendo posts:", error);
+    throw error;
+  }
 
   // Procesamos para añadir la bandera "user_has_liked"
   const postsFormateados = data.map((post: any) => ({
@@ -65,4 +69,46 @@ export const toggleLike = async (postId: string, yaDioLike: boolean) => {
     // Incrementamos contador
     await supabase.rpc('increment_likes', { post_id: postId });
   }
+};
+
+// --- SECCIÓN COMENTARIOS ---
+
+export interface Comment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  profiles: { full_name: string; avatar_url: string }; // Autor del comentario
+}
+
+// 4. Obtener comentarios de un post
+export const obtenerComentarios = async (postId: string) => {
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select(`
+      *,
+      profiles!post_comments_author_fkey (full_name, avatar_url)
+    `)
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true }); // Los más viejos arriba (como chat)
+
+  if (error) throw error;
+  return data as Comment[];
+};
+
+// 5. Enviar un comentario nuevo
+export const enviarComentario = async (postId: string, content: string) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("No hay sesión activa");
+
+  const { error } = await supabase
+    .from('post_comments')
+    .insert({
+      post_id: postId,
+      user_id: session.user.id,
+      content: content
+    });
+
+  if (error) throw error;
 };
