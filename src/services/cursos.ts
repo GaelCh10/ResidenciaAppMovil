@@ -32,6 +32,7 @@ export interface Leccion {
   title: string;
   type: "video" | "image" | "none";
   content_url: string; // URL de supabase
+  image_url: string;
   spanish_text: string;
   lsm_text_code: string; // Texto para la fuente lsmvulpy
   order_index: number;

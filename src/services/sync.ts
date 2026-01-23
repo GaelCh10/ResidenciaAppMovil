@@ -56,12 +56,13 @@ export const sincronizarDatos = async (userId?: string) => {
       await db.runAsync("DELETE FROM lessons");
       for (const l of lessons) {
         await db.runAsync(
-          "INSERT INTO lessons (id, course_id, title, content_url, spanish_text, lsm_text_code, type, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO lessons (id, course_id, title, content_url, image_url, spanish_text, lsm_text_code, type, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
           [
             l.id,
             l.course_id,
             l.title,
             l.content_url,
+            l.image_url,
             l.spanish_text,
             l.lsm_text_code,
             l.type,

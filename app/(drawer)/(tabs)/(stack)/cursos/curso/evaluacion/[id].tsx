@@ -34,6 +34,20 @@ export default function EvaluacionPantalla() {
   >(null);
   const [mostrarResultado, setMostrarResultado] = useState(false);
 
+  // --- HELPER PARA DETECTAR TIPO ---
+  const getMediaType = (url: string) => {
+    if (!url) return 'image';
+    // Obtenemos la extensión del archivo
+    const extension = url.split('.').pop()?.toLowerCase();
+    // Lista de extensiones de video comunes
+    const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
+    
+    if (videoExtensions.includes(extension || '')) {
+        return 'video';
+    }
+    return 'image';
+  };
+
   const manejarRespuesta = (opcion: string) => {
     setRespuestaSeleccionada(opcion);
     const esCorrecta = opcion === preguntas[indiceActual].correct_answer;
@@ -70,7 +84,6 @@ export default function EvaluacionPantalla() {
           console.warn(
             "No hay usuario logueado (Offline), no se guardó el progreso en la nube.",
           );
-          // Opcional: Aquí podrías guardar con un ID temporal si quisieras lógica offline compleja para usuarios no logueados
         }
       } catch (error) {
         console.error("Error al obtener usuario:", error);
@@ -108,6 +121,9 @@ export default function EvaluacionPantalla() {
   const preguntaActual = preguntas[indiceActual];
   const porcentajeFinal = Math.round((puntaje / preguntas.length) * 100);
   const aprobado = porcentajeFinal >= 80;
+  
+  // Calculamos el tipo dinámicamente
+  const tipoMedio = preguntaActual.media_url ? getMediaType(preguntaActual.media_url) : 'none';
 
   return (
     <SafeAreaView className="flex-1 bg-secondary-200 px-4">
@@ -138,9 +154,9 @@ export default function EvaluacionPantalla() {
             <View className="h-48 w-full mb-4 rounded-xl overflow-hidden bg-gray-100">
               <SmartMedia
                 uri={preguntaActual.media_url}
-                type="video" // SmartMedia detectará si es video internamente o pasamos 'video' si lo sabemos
+                type={tipoMedio} // <--- AQUÍ ESTÁ EL CAMBIO IMPORTANTE
                 resizeMode="contain"
-                useNativeControls={true}
+                useNativeControls={tipoMedio === 'video'} // Solo controles si es video
                 isLooping={true}
               />
             </View>

@@ -18,7 +18,7 @@ const DrawerLayout = () => {
       <Drawer.Screen
         name="(tabs)"
         options={{
-          drawerLabel: "Inicio",
+          drawerLabel: "Bienvenido",
           title: "LSM",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />

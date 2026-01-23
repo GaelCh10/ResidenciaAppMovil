@@ -1,21 +1,26 @@
-import { View, Text } from 'react-native'
-import React from 'react'
 import { DrawerContentComponentProps, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer'
+import React from 'react'
+import { Image, View } from 'react-native'
 
-const customDrawer = (props: DrawerContentComponentProps) => {
+const CustomDrawer = (props: DrawerContentComponentProps) => {
   return (
     <DrawerContentScrollView {...props}>
-      <View className='flex justify-center items-center mx-3 p-10 h-[150px] rounded-xl bg-blue-500'>
-        <View className='flex justify-center items-center bg-white rounded-full h-24 w-24 '>
-            <Text className='text-primary font-work-black text-3xl'>GCH</Text>
-        </View>
+      {/* Header del Drawer */}
+      <View className='flex justify-center items-center mx-3 mt-2 mb-4 p-6 h-[150px] rounded-xl bg-blue-400'>
+        {/* Logo */}
+        <Image 
+            // ⚠️ Asegúrate de que la ruta relativa sea correcta según donde esté este archivo
+            source={require('../../assets/images/logo-snfondo.png')} 
+            className='h-48 w-48'
+            resizeMode='contain'
+        />
       </View>
 
-      {/* drawer items */}
+      {/* Items de navegación */}
       <DrawerItemList {...props} />
 
     </DrawerContentScrollView>
   )
 }
 
-export default customDrawer
+export default CustomDrawer

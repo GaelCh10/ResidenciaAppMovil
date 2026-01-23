@@ -48,6 +48,7 @@ export const initDB = async () => {
         course_id TEXT NOT NULL,
         title TEXT,
         content_url TEXT,
+        image_url TEXT,
         spanish_text TEXT,
         lsm_text_code TEXT,
         type TEXT,

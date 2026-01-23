@@ -26,7 +26,7 @@ const StackLayout = () => {
  */
                 headerTintColor: '#fff',
                 headerStyle: {
-                    backgroundColor: 'blue',
+                    backgroundColor: '#0A5FC7',
                 },
 
                 contentStyle: {
@@ -36,7 +36,7 @@ const StackLayout = () => {
 
                 headerLeft: ({ tintColor, canGoBack }) => (
                     <Ionicons
-                        name={canGoBack ? 'arrow-back-outline' : 'grid-outline'}
+                        name={canGoBack ? 'arrow-back-outline' : 'menu-outline'}
                         className="mr-5"
                         color={'#fff'}
                         size={20}

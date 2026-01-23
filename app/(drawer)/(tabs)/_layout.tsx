@@ -9,7 +9,7 @@ const TabsLayout = () => {
         headerShown: false, // <--- IMPORTANTE: Esto quita el doble encabezado
         tabBarActiveTintColor: "white",
         tabBarShowLabel: false,
-        tabBarStyle: { backgroundColor: "blue" },
+        tabBarStyle: { backgroundColor: "#0A5FC7" },
       }}
     >
       {/* 1. Cursos (Stack principal) */}
