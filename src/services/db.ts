@@ -4,19 +4,23 @@ const db = SQLite.openDatabaseSync("lsm_offline.db");
 
 export const initDB = async () => {
   try {
-    console.log("♻️ Reiniciando base de datos...");
+    console.log("🚀 [DB] Iniciando inicialización de la base de datos local...");
 
-    await db.execAsync(`
-      DROP TABLE IF EXISTS courses;
-      DROP TABLE IF EXISTS levels;
-      DROP TABLE IF EXISTS categories;
-      DROP TABLE IF EXISTS lessons;
-      DROP TABLE IF EXISTS quiz_questions;
-      DROP TABLE IF EXISTS dictionary_categories;
-      DROP TABLE IF EXISTS dictionary_entries;
-    `);
+    // 1. Borrar tablas antiguas (Opcional, útil en desarrollo para limpiar)
+    // console.log("🗑️ [DB] Limpiando esquema anterior...");
+    // await db.execAsync(`
+    //   DROP TABLE IF EXISTS courses;
+    //   DROP TABLE IF EXISTS levels;
+    //   DROP TABLE IF EXISTS categories;
+    //   DROP TABLE IF EXISTS lessons;
+    //   DROP TABLE IF EXISTS quiz_questions;
+    //   DROP TABLE IF EXISTS dictionary_categories;
+    //   DROP TABLE IF EXISTS dictionary_entries;
+    // `);
+    // console.log("✅ [DB] Esquema anterior limpiado.");
 
-    // 2. CREAMOS TODO NUEVO (Con las columnas order_index faltantes)
+    // 2. Crear tablas
+    console.log("🏗️ [DB] Creando tablas nuevas...");
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
       
@@ -78,20 +82,25 @@ export const initDB = async () => {
         media_type TEXT
       );
 
-    
       CREATE TABLE IF NOT EXISTS user_progress (
         id TEXT PRIMARY KEY NOT NULL,
         user_id TEXT NOT NULL,
         course_id TEXT NOT NULL,
-        is_completed INTEGER DEFAULT 0, -- SQLite usa 0/1 para booleans
+        is_completed INTEGER DEFAULT 0,
         quiz_score INTEGER DEFAULT 0,
         last_accessed_at TEXT
       );
     `);
-    console.log("Base de datos lista y actualizada");
-    return true; // Retornamos true para avisar que acabó
+    
+    // 3. VERIFICACIÓN: Consultamos a SQLite qué tablas existen realmente
+    const tables = await db.getAllAsync(
+      "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+    );
+    console.log("✅ [DB] Base de datos lista. Tablas creadas:", JSON.stringify(tables, null, 2));
+    
+    return true; 
   } catch (error) {
-    console.error("Error iniciando DB local:", error);
+    console.error("❌ [DB] Error FATAL iniciando DB local:", error);
     return false;
   }
 };

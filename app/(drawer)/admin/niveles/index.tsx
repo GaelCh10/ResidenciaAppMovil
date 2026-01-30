@@ -50,9 +50,24 @@ export default function AdminLevels() {
   };
 
   const borrarNivel = async (id: string) => {
-    Alert.alert("Borrar", "Se borrarán los cursos de este nivel.", [
+    Alert.alert("Borrar", "Se borrarán todos los cursos de este nivel.", [
         { text: "Cancelar" },
-        { text: "Borrar", style: 'destructive', onPress: async () => { await supabase.from('levels').delete().eq('id', id); cargarNiveles(); }}
+        { 
+            text: "Borrar", 
+            style: 'destructive', 
+            onPress: async () => { 
+                setLoading(true);
+                const { error } = await supabase.from('levels').delete().eq('id', id);
+                
+                if (error) {
+                    console.error("Error borrando nivel:", error);
+                    Alert.alert("Error", "No se pudo borrar el nivel.");
+                } else {
+                    cargarNiveles();
+                }
+                setLoading(false);
+            }
+        }
     ]);
   };
 

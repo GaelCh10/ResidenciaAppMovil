@@ -34,7 +34,7 @@ const ExpoStorageAdapter = {
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     // Usamos nuestro adaptador seguro en lugar de AsyncStorage directo
-    storage: ExpoStorageAdapter,
+    storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

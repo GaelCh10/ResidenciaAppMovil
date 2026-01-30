@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-// 1. CAMBIO AQUÍ: Importamos destructurando
-import { downloadAsync, getInfoAsync, documentDirectory } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system';
 
 export const useCachedMedia = (remoteUrl: string | null, type: 'image' | 'video' = 'image') => {
   const [source, setSource] = useState<string | null>(null);
@@ -12,31 +11,47 @@ export const useCachedMedia = (remoteUrl: string | null, type: 'image' | 'video'
     const checkCache = async () => {
       setLoading(true);
       try {
-        // 2. CAMBIO AQUÍ: Validación de seguridad para TypeScript
-        if (!documentDirectory) {
-            console.warn("El sistema de archivos no está disponible");
+        // 1. Usamos la ruta clásica. Si esto es null, el APK está mal compilado.
+        const folder = FileSystem.documentDirectory;
+
+        if (!folder) {
+            console.error("❌ [Cache] FileSystem.documentDirectory es NULL. El módulo nativo no está enlazado.");
             setSource(remoteUrl);
             return;
         }
 
-        const fileName = remoteUrl.split('/').pop();
-        // Usamos la variable importada directamente
-        const localUri = `${documentDirectory}${fileName}`;
+        // 2. Aseguramos que la carpeta exista (Truco de seguridad)
+        const cacheFolder = `${folder}media_cache/`;
+        const dirInfo = await FileSystem.getInfoAsync(cacheFolder);
+        if (!dirInfo.exists) {
+            console.log("📂 Creando carpeta de caché...");
+            await FileSystem.makeDirectoryAsync(cacheFolder, { intermediates: true });
+        }
 
-        const fileInfo = await getInfoAsync(localUri);
+        // 3. Definimos la ruta del archivo
+        // Usamos encodeURIComponent para evitar errores con caracteres raros en la URL
+        const fileName = remoteUrl.split('/').pop()?.split('?')[0] || `file_${Date.now()}`;
+        const localUri = `${cacheFolder}${fileName}`;
+
+        // 4. Verificamos si ya existe el archivo
+        const fileInfo = await FileSystem.getInfoAsync(localUri);
 
         if (fileInfo.exists) {
+          console.log("✅ [Cache] Usando local:", localUri);
           setSource(localUri);
         } else {
-          const { uri } = await downloadAsync(
+          console.log("⬇️ [Cache] Descargando...");
+          const { uri } = await FileSystem.downloadAsync(
             remoteUrl,
             localUri
           );
+          console.log("✅ [Cache] Descarga completa:", uri);
           setSource(uri);
         }
+
       } catch (error) {
-        console.error("Error cacheando media:", error);
-        setSource(remoteUrl); 
+        console.error("❌ [Cache] Error:", error);
+        setSource(remoteUrl); // Fallback: Usar URL remota si falla algo
       } finally {
         setLoading(false);
       }

@@ -1,18 +1,45 @@
 import { supabase } from '@/src/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function AdminCategories() {
+
+
+
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+   const [loadingCheck, setLoadingCheck] = useState(true);
   // Modal y Estado de Edición
   const [modalVisible, setModalVisible] = useState(false);
   // Usamos un objeto para manejar tanto creación como edición
   const [tempItem, setTempItem] = useState({ id: '', name: '', description: '', order_index: '0' });
+    const [isAdmin, setIsAdmin] = useState(false);
+
+   useEffect(() => {
+      checkUserRole();
+    }, []);
+  
+    const checkUserRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+  
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+  
+      if (data?.role === 'admin') {
+        setIsAdmin(true);
+      } else {
+        Alert.alert("Acceso Denegado", "No tienes permisos de administrador.");
+        router.back();
+      }
+      setLoadingCheck(false);
+    };
 
   useFocusEffect(useCallback(() => { cargarCategorias(); }, []));
 
@@ -68,12 +95,36 @@ export default function AdminCategories() {
   };
 
   const borrarCategoria = async (id: string) => {
+    console.log("🛑 Intentando borrar ID:", id); // 1. Ver si llega el ID
+
     Alert.alert("Borrar", "Se borrarán todos los niveles y cursos dentro.", [
-      { text: "Cancelar" },
-      { text: "Borrar", style: 'destructive', onPress: async () => {
-          await supabase.from('categories').delete().eq('id', id);
-          cargarCategorias();
-      }}
+      { text: "Cancelar", style: "cancel" },
+      { 
+        text: "Borrar", 
+        style: 'destructive', 
+        onPress: async () => {
+          setLoading(true);
+          
+          // AGREGAMOS { count: 'exact' } PARA SABER SI REALMENTE BORRÓ ALGO
+          const { error, count } = await supabase
+            .from('categories')
+            .delete({ count: 'exact' }) 
+            .eq('id', id);
+          
+          console.log("📊 Resultado Supabase:", { error, count }); // 2. Ver qué respondió
+
+          if (error) {
+            Alert.alert("Error de BD", error.message);
+          } else if (count === 0) {
+            // AQUÍ ESTÁ EL PROBLEMA: No hubo error, pero no borró nada
+            Alert.alert("Permiso Denegado", "Supabase no permitió borrar el registro (RLS Blocking). Revisa tus Políticas.");
+          } else {
+            Alert.alert("Éxito", "Categoría eliminada correctamente");
+            cargarCategorias();
+          }
+          setLoading(false);
+        }
+      }
     ]);
   };
 

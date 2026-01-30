@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 export default function AdminLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="admin/" />
       <Stack.Screen name="index" />
       <Stack.Screen name="diccionario/index" />
       <Stack.Screen name="diccionario/[id]" />

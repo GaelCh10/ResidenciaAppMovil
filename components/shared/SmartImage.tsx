@@ -1,21 +1,18 @@
-// components/shared/SmartImage.tsx
-import { useCachedMedia } from '@/src/hooks/useCachedMedia';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { ActivityIndicator, Image, ImageResizeMode, View } from 'react-native';
+import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 interface SmartImageProps {
-  uri?: string | null;      // La URL remota (puede ser null)
-  className?: string;       // Para estilos con NativeWind
-  style?: any;              // Para estilos inline
-  resizeMode?: ImageResizeMode;
+  uri?: string | null;
+  className?: string;
+  style?: any;
+  resizeMode?: 'cover' | 'contain' | 'stretch' | 'center';
 }
 
 export default function SmartImage({ uri, className, style, resizeMode = 'cover' }: SmartImageProps) {
-  // Usamos el hook que creamos antes
-  const { source, loading } = useCachedMedia(uri || null, 'image');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Caso: No hay URL (Ni remota ni local)
   if (!uri) {
     return (
       <View className={`bg-gray-100 justify-center items-center ${className}`} style={style}>
@@ -24,22 +21,21 @@ export default function SmartImage({ uri, className, style, resizeMode = 'cover'
     );
   }
 
-  // 2. Caso: Cargando / Descargando
-  if (loading) {
-    return (
-      <View className={`bg-gray-100 justify-center items-center ${className}`} style={style}>
-        <ActivityIndicator size="small" color="#2563EB" />
-      </View>
-    );
-  }
-
-  // 3. Caso: Imagen Lista (Ya sea local 'file://' o remota 'https://')
   return (
-    <Image
-      source={{ uri: source || uri }} 
-      className={className}
-      style={style}
-      resizeMode={resizeMode}
-    />
+    <View className={className} style={style}>
+      {isLoading && (
+        <View className="absolute inset-0 justify-center items-center bg-gray-100">
+          <ActivityIndicator size="small" color="#2563EB" />
+        </View>
+      )}
+      <Image
+        source={{ uri: uri }} // Pasamos la URL remota directa
+        style={{ width: '100%', height: '100%' }}
+        contentFit={resizeMode === 'stretch' ? 'fill' : resizeMode === 'center' ? 'none' : resizeMode}
+        transition={200}
+        cachePolicy="disk" // <--- ¡LA MAGIA! Esto obliga a guardar en disco
+        onLoadEnd={() => setIsLoading(false)}
+      />
+    </View>
   );
 }

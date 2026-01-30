@@ -74,18 +74,18 @@ const HomeScreen = () => {
             />
 
             {/* Botón 2: LSM / Gestuno */}
-            <DashboardCard 
+            {/* <DashboardCard 
               title="LSM / Gestuno"
               subtitle="Aprende señas"
               onPress={() => router.push('/profile')}
-            />
+            /> */}
 
-            {/* Botón 3: Ejemplo de ajuste (Placeholder para simular grid) */}
+            {/* Botón 3: Ejemplo de ajuste (Placeholder para simular grid)
              <DashboardCard 
               title="Mi Perfil"
               subtitle="Tu progreso"
               onPress={() => router.push('/profile')}
-            />
+            /> */}
 
             {/* Botón 4: Ajustes */}
              {/* <DashboardCard 

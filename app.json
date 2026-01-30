@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "navigation-app",
+    "name": "SHBEEY",
     "slug": "navigation-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo-snfondo.png",
     "scheme": "navigationapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -27,21 +27,21 @@
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.INTERNET",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.INTERNET"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.anonymous.navigationapp"
+      "package": "com.tecnm.shbeeylsmapp"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/logo-snfondo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -50,11 +50,29 @@
           }
         }
       ],
-      "expo-sqlite"
+
+      [
+    "expo-build-properties",
+    {
+      "android": {
+        "useAndroidX": true,
+        "enableJetifier": true
+      }
+    }
+  ],
+      "expo-sqlite",
+      "expo-web-browser",
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1ca5a53d-7fd4-40a7-91f7-1339ec809561"
+      }
     }
   }
 }

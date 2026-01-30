@@ -78,7 +78,7 @@ const DrawerLayout = () => {
         }}
       />
 
-      {/* Opcional: Si quieres link directo al Foro o Juegos en el drawer aunque estén en tabs, puedes dejarlos ocultos o referenciarlos con deep link, pero por ahora déjalo limpio así */}
+
     </Drawer>
   );
 };
