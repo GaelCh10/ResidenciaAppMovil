@@ -14,7 +14,6 @@ export interface EntradaDiccionario {
   definition?: string;
 }
 
-// 1. Obtener todas las categorías
 export const obtenerCategoriasDiccionario = async () => {
   const { data, error } = await supabase
     .from('dictionary_categories')
@@ -25,13 +24,12 @@ export const obtenerCategoriasDiccionario = async () => {
   return data as CategoriaDiccionario[];
 };
 
-// 2. Obtener palabras de una categoría específica
 export const obtenerPalabrasPorCategoria = async (categoryId: string) => {
   const { data, error } = await supabase
     .from('dictionary_entries')
     .select('*')
     .eq('category_id', categoryId)
-    .order('word', { ascending: true }); // Orden alfabético
+    .order('word', { ascending: true }); 
 
   if (error) throw error;
   return data as EntradaDiccionario[];

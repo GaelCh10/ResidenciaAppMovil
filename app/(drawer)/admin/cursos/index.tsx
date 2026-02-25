@@ -11,7 +11,6 @@ export default function AdminCourses() {
   const [loading, setLoading] = useState(true);
   
   const [modalVisible, setModalVisible] = useState(false);
-  // Estado unificado
   const [tempItem, setTempItem] = useState({ id: '', title: '', description: '', cover_image_url: '', order_index: '0' });
 
   useFocusEffect(useCallback(() => { if(level_id) cargarCursos(); }, [level_id]));
@@ -50,12 +49,10 @@ export default function AdminCourses() {
     };
 
     if (tempItem.id) {
-        // Actualizar
         const { error } = await supabase.from('courses').update(payload).eq('id', tempItem.id);
         if (error) Alert.alert("Error", error.message);
         else { setModalVisible(false); cargarCursos(); }
     } else {
-        // Insertar (y redirigir a editar contenido)
         const { data, error } = await supabase.from('courses').insert(payload).select().single();
         if (error) Alert.alert("Error", error.message);
         else {

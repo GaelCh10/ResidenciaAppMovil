@@ -29,11 +29,11 @@ export default function SmartImage({ uri, className, style, resizeMode = 'cover'
         </View>
       )}
       <Image
-        source={{ uri: uri }} // Pasamos la URL remota directa
+        source={{ uri: uri }}
         style={{ width: '100%', height: '100%' }}
         contentFit={resizeMode === 'stretch' ? 'fill' : resizeMode === 'center' ? 'none' : resizeMode}
         transition={200}
-        cachePolicy="disk" // <--- ¡LA MAGIA! Esto obliga a guardar en disco
+        cachePolicy="disk" 
         onLoadEnd={() => setIsLoading(false)}
       />
     </View>

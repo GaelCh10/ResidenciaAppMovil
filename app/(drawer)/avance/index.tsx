@@ -1,42 +1,35 @@
 import { useAvanceUsuario } from "@/src/hooks/useOfflineData";
-import { supabase } from "@/src/lib/supabase"; // <--- Para obtener el usuario real
-import { Stack, useFocusEffect } from "expo-router"; // <--- IMPORTANTE: useFocusEffect
+import { supabase } from "@/src/lib/supabase";
+import { Ionicons } from "@expo/vector-icons"; // Icono Menu
+import { DrawerActions } from "@react-navigation/native"; // Acción Drawer
+import { Stack, useFocusEffect, useNavigation } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AvanceScreen() {
   const [userId, setUserId] = useState<string | null>(null);
+  const navigation = useNavigation();
 
-  // 1. OBTENER EL ID REAL DEL USUARIO AL MONTAR
   useFocusEffect(
     useCallback(() => {
       const getUser = async () => {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          setUserId(user.id);
-        }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) setUserId(user.id);
       };
       getUser();
     }, []),
   );
 
-  // 2. USAR EL HOOK CON EL ID REAL
-  // Pasamos userId (puede ser null al principio, el hook debe manejarlo)
-  const { estadisticas, resumenGeneral, loading, recargar } = useAvanceUsuario(
-    userId || "",
-  );
+  const { estadisticas, resumenGeneral, loading, recargar } = useAvanceUsuario(userId || "");
 
-  // 3. RECARGAR DATOS CADA VEZ QUE LA PANTALLA GANA EL FOCO
   useFocusEffect(
     useCallback(() => {
       if (userId) {
-        console.log("🔄 Recargando avance visual...");
+        console.log("Recargando avance visual...");
         recargar();
       }
-    }, [userId]), // Se ejecuta cuando tenemos userId o cuando volvemos a la pantalla
+    }, [userId]),
   );
 
   if (loading || !userId) {
@@ -49,14 +42,23 @@ export default function AvanceScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-200">
-      <Stack.Screen
-        options={{ title: "Mi Progreso", headerBackTitle: "Perfil" }}
-      />
+    <SafeAreaView className="flex-1 bg-secondary-200 px-4 pt-2">
+      <Stack.Screen options={{ headerShown: false }} />
+      <View className="flex-row justify-between items-center mb-6 mt-2">
+        <View>
+            <Text className="text-3xl font-black text-secondary">Mi Progreso</Text>
+            <Text className="text-gray-500 text-sm">Tus logros hasta hoy</Text>
+        </View>
+        <TouchableOpacity 
+            onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} 
+            className="bg-white p-3 rounded-full shadow-sm"
+        >
+            <Ionicons name="menu" size={24} color="#0b1973" />
+        </TouchableOpacity>
+      </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {/* TARJETA RESUMEN GENERAL */}
-        <View className="bg-primary rounded-3xl p-6 mb-6 shadow-lg flex-row justify-between items-center">
+      <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+        <View className="bg-blueone rounded-3xl p-6 mb-6 shadow-lg flex-row justify-between items-center">
           <View>
             <Text className="text-white text-lg font-work-regular opacity-80">
               Cursos Completados
@@ -74,7 +76,7 @@ export default function AvanceScreen() {
           </View>
         </View>
 
-        <Text className="text-primary text-xl font-work-bold mb-4">
+        <Text className="text-secondary text-xl font-work-bold mb-4">
           Detalle por Categoría
         </Text>
 
@@ -85,40 +87,26 @@ export default function AvanceScreen() {
         )}
 
         {estadisticas.map((cat) => (
-          <View
-            key={cat.id}
-            className="bg-white rounded-2xl p-4 mb-4 shadow-sm"
-          >
-            {/* CABECERA */}
+          <View key={cat.id} className="bg-white rounded-2xl p-4 mb-4 shadow-sm">
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-lg font-work-black text-gray-800">
                 {cat.name}
               </Text>
-              <View
-                className={`px-2 py-1 rounded-lg ${cat.porcentaje === 100 ? "bg-green-100" : "bg-gray-100"}`}
-              >
-                <Text
-                  className={`font-bold ${cat.porcentaje === 100 ? "text-green-700" : "text-gray-500"}`}
-                >
+              <View className={`px-2 py-1 rounded-lg ${cat.porcentaje === 10 ? "bg-green-100" : "bg-gray-100"}`}>
+                <Text className={`font-bold ${cat.porcentaje === 10 ? "text-green-700" : "text-gray-500"}`}>
                   {cat.porcentaje}%
                 </Text>
               </View>
             </View>
 
-            {/* BARRA */}
             <View className="h-2 bg-gray-100 rounded-full mb-4 overflow-hidden">
               <View
                 className="h-full bg-primary"
                 style={{ width: `${cat.porcentaje}%` }}
               />
             </View>
-
-            {/* NIVELES */}
             {cat.niveles.map((nivel: any) => (
-              <View
-                key={nivel.id}
-                className="mt-2 border-t border-gray-100 pt-2"
-              >
+              <View key={nivel.id} className="mt-2 border-t border-gray-100 pt-2">
                 <View className="flex-row justify-between items-center">
                   <Text className="text-gray-600 font-work-bold">
                     {nivel.name}
@@ -128,7 +116,6 @@ export default function AvanceScreen() {
                   </Text>
                 </View>
 
-                {/* Indicadores visuales de cursos */}
                 <View className="mt-2 flex-row flex-wrap gap-2">
                   {nivel.cursos.map((curso: any) => (
                     <View

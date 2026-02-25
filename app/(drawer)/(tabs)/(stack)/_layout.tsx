@@ -20,13 +20,12 @@ const StackLayout = () => {
             screenOptions={{
                 // headerShown: false,
                 headerShadowVisible: false,
-                /* headerTitleStyle:{
-                    
+                /* headerTitleStyle:{                   
                 },
  */
                 headerTintColor: '#fff',
                 headerStyle: {
-                    backgroundColor: '#0A5FC7',
+                    backgroundColor: '#0b1973',
                 },
 
                 contentStyle: {

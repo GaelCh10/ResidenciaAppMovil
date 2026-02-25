@@ -35,17 +35,14 @@ export default function SmartMedia({
   
   const { source, loading } = useCachedMedia(uri || null, mediaType as 'image' | 'video');
   const videoRef = useRef<Video>(null);
-
-  // Mapeo para Imagen (Expo Image)
   const getContentFit = (mode: string): ImageContentFit => {
     switch (mode) {
         case 'stretch': return 'fill';
         case 'center': return 'none';
-        default: return mode as ImageContentFit; // cover, contain
+        default: return mode as ImageContentFit; 
     }
   };
 
-  // Mapeo para Video (Expo AV)
   const getVideoResize = (mode: string) => {
       if (mode === 'cover') return ResizeMode.COVER;
       if (mode === 'stretch') return ResizeMode.STRETCH;
@@ -57,7 +54,6 @@ export default function SmartMedia({
       if (isPlaying) {
         videoRef.current.playAsync();
       } else if (!autoPlay) {
-        // videoRef.current.pauseAsync();
       }
     }
   }, [isPlaying]);
@@ -88,7 +84,7 @@ export default function SmartMedia({
         style={[{ width: '100%', height: '100%' }, style]}
         className={className}
         useNativeControls={useNativeControls}
-        resizeMode={getVideoResize(resizeMode)} // Usamos el mapeo de video
+        resizeMode={getVideoResize(resizeMode)} 
         isLooping={isLooping}
         shouldPlay={autoPlay || isPlaying}
         isMuted={false}
@@ -101,7 +97,7 @@ export default function SmartMedia({
       source={{ uri: finalUri }}
       className={className}
       style={[{ width: '100%', height: '100%' }, style]}
-      contentFit={getContentFit(resizeMode)} // Usamos el mapeo de imagen
+      contentFit={getContentFit(resizeMode)} 
       transition={200}
       cachePolicy="disk"
     />

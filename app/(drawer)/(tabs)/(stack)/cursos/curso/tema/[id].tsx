@@ -33,10 +33,8 @@ export default function VisorLeccion() {
   return (
     <SafeAreaView className="flex-1 bg-secondary-200">
       <Stack.Screen options={{ title: leccionActual.title || 'Lección', headerBackTitle: 'Cursos' }} />
-
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }}>
         
-        {/* 1. MULTIMEDIA PRINCIPAL (Video de la seña) */}
         <View className="h-64 w-full bg-black rounded-3xl overflow-hidden mb-6 shadow-lg border-4 border-white">
           {leccionActual.content_url ? (
             <SmartMedia
@@ -51,11 +49,8 @@ export default function VisorLeccion() {
           )}
         </View>
 
-        {/* 2. TARJETA DE CONTENIDO */}
-        <View className="bg-white rounded-3xl p-6 shadow-sm mb-6 relative overflow-hidden">
-          
+        <View className="bg-white rounded-3xl p-6 shadow-sm mb-6 relative overflow-hidden">         
           <View className="items-center">
-            {/* IMAGEN ILUSTRATIVA */}
             {leccionActual.image_url && (
                <View className="w-32 h-32 mb-4 rounded-full bg-gray-50 border-4 border-secondary-100 items-center justify-center overflow-hidden shadow-sm">
                   <Image 
@@ -66,22 +61,24 @@ export default function VisorLeccion() {
                </View>
             )}
 
-            <Text className="text-gray-400 font-work-bold text-xs tracking-widest mb-1">SIGNIFICADO</Text>
+            <Text className="text-gray-400 font-work-bold text-xs tracking-widest mb-1">Palabra en español</Text>
             <Text className="text-primary text-4xl font-work-black text-center mb-6 capitalize">
               {leccionActual.spanish_text}
             </Text>
 
             <View className="h-[1px] w-full bg-gray-100 mb-6" />
 
-            <Text className="text-gray-400 font-work-bold text-xs tracking-widest mb-1">GLOSA / DELETREO</Text>
-            <Text className="text-secondary-500 text-5xl text-center" style={{ fontFamily: 'LsmVulpy' }}>
+            <Text className="text-gray-400 font-work-bold text-xs tracking-widest mb-1">Deletreo</Text>
+            <Text className="text-secondary-500 text-5xl text-center" 
+              style={{ fontFamily: 'LsmVulpy', 
+                       letterSpacing: 12,
+              }}>
               {leccionActual.lsm_text_code}
             </Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* CONTROLES */}
       <View className="flex-row justify-between items-center p-6 bg-white border-t border-gray-100 rounded-t-3xl shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         <TouchableOpacity onPress={anteriorLeccion} disabled={indiceActual === 0} className={`flex-row items-center p-3 ${indiceActual === 0 ? 'opacity-30' : 'opacity-100'}`}>
           <Ionicons name="arrow-back-circle" size={44} color="#64748B" />

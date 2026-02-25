@@ -11,7 +11,7 @@ export default function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ completados: 0, promedio: 0 });
 
-  // useFocusEffect hace que los datos se recarguen cada vez que entras a la pestaña
+  // useFocusEffect hace que los datos se recarguen cada vez que entra a la pestaña
   useFocusEffect(
     useCallback(() => {
       cargarPerfil();
@@ -27,7 +27,7 @@ export default function UserProfile() {
         return;
       }
 
-      // 1. Cargar Datos del Perfil
+      // Cargar Datos del Perfil
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('*')
@@ -37,9 +37,9 @@ export default function UserProfile() {
       if (userError) throw userError;
       setProfile(userData);
 
-      // 2. Calcular Estadísticas (Cursos completados)
+      // Calcular Estadísticas 
       const { data: progressData, error: progressError } = await supabase
-        .from('user_progress') // Asegúrate de que esta tabla exista o usa la que definimos antes
+        .from('user_progress') 
         .select('*')
         .eq('user_id', session.user.id)
         .eq('is_completed', true);
@@ -47,7 +47,7 @@ export default function UserProfile() {
       if (!progressError && progressData) {
         setStats({
           completados: progressData.length,
-          promedio: 0 // Aquí podrías calcular el promedio de calificaciones si quisieras
+          promedio: 0 // para calcular un promedio de calificaciones
         });
       }
 
@@ -124,7 +124,7 @@ export default function UserProfile() {
         <Text className="text-primary font-work-bold text-lg mb-3 ml-2">Cuenta</Text>
         <View className="bg-white rounded-3xl overflow-hidden shadow-sm mb-6">
             
-            {/* Opción 1: Mis Avances */}
+            {/* Mis Avances */}
             <TouchableOpacity 
               onPress={() => router.push('/(drawer)/avance')} // Ajusta ruta si es necesario
               className="flex-row items-center p-4 border-b border-gray-100"
@@ -136,16 +136,16 @@ export default function UserProfile() {
               <Ionicons name="chevron-forward" size={20} color="#ccc" />
             </TouchableOpacity>
 
-             {/* Opción 2: Editar Perfil (Futuro) */}
-            <TouchableOpacity className="flex-row items-center p-4 border-b border-gray-100">
+             {/* Editar Perfil (Futuro) */}
+            {/* <TouchableOpacity className="flex-row items-center p-4 border-b border-gray-100">
               <View className="bg-purple-100 p-2 rounded-xl mr-4">
                 <Ionicons name="person" size={22} color="#9333EA" />
               </View>
               <Text className="flex-1 text-gray-700 font-work-medium text-lg">Editar Datos</Text>
               <Ionicons name="chevron-forward" size={20} color="#ccc" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            {/* Opción 3: PANEL ADMIN (Solo si es admin) */}
+            {/*  PANEL ADMIN*/}
             {profile?.role === 'admin' && (
               <TouchableOpacity 
                 onPress={() => router.push('/(drawer)/admin')}

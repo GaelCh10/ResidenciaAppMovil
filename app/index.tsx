@@ -2,6 +2,7 @@ import { Redirect } from 'expo-router'
 import React from 'react'
 
 const App = () => {
+    //se pueden borrar los comentarios de este documento, son solo ejemplos de redireccionamiento
     // return <Redirect href="/home" />
         // return <Redirect href="/tabs" />
         return <Redirect href="/home" />

@@ -4,14 +4,11 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// IMPORTANTE: Hook offline
 import { useCursosOffline } from '@/src/hooks/useOfflineData';
 
 export default function ListaCursosPorNivel() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-
-  // Usamos el Hook
   const { data: cursos, loading } = useCursosOffline(id ? id.toString() : '');
 
   if (loading) {

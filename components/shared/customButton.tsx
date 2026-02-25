@@ -3,8 +3,6 @@ import { Pressable, PressableProps, Text } from 'react-native';
 
 interface Props extends PressableProps {
     children: string;
-    // para intensidades de color se tienen que declarar ya que no
-    // se puede concatenar
     color?: 'primary' | 'secondary' | 'tertiary'
     variant?: 'contained' | 'text-only'
     className?: string;
@@ -24,7 +22,6 @@ const CustomButton = ({ children, color, onPress, onLongPress, variant = 'contai
         tertiary: 'text-tertiary',
     }[color];
 
-    // VARIANTE DE BOTON QUE SOLO ES TEXTO
     if (variant == 'text-only') {
         return (
             <Pressable className={`p-3 ${className}`}

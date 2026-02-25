@@ -9,14 +9,11 @@ export default function AdminDictionaryCategories() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-
-  // Modal para Crear/Editar
   const [modalVisible, setModalVisible] = useState(false);
   const [catName, setCatName] = useState('');
   const [catImage, setCatImage] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Verificar Admin y Cargar Datos al enfocar la pantalla
   useFocusEffect(
     useCallback(() => {
       checkUserRole();
@@ -44,7 +41,6 @@ export default function AdminDictionaryCategories() {
 
   const cargarCategorias = async () => {
     setLoading(true);
-    // Ordenamos alfabéticamente
     const { data } = await supabase.from('dictionary_categories').select('*').order('name');
     if (data) setCategories(data);
     setLoading(false);
@@ -106,7 +102,6 @@ export default function AdminDictionaryCategories() {
           keyExtractor={i => i.id}
           renderItem={({ item }) => (
             <TouchableOpacity 
-              // --- NAVEGACIÓN A LAS PALABRAS ---
               onPress={() => router.push({ 
                   pathname: '/(drawer)/admin/diccionario/[id]', 
                   params: { id: item.id, nombre: item.name } 
@@ -136,13 +131,9 @@ export default function AdminDictionaryCategories() {
           ListEmptyComponent={<Text className="text-center text-gray-400 mt-10">No hay categorías. Crea una.</Text>}
         />
       )}
-
-      {/* FAB Agregar */}
       <TouchableOpacity onPress={() => abrirModal()} className="absolute bottom-8 right-6 bg-primary w-16 h-16 rounded-full items-center justify-center shadow-lg">
         <Ionicons name="add" size={32} color="white" />
       </TouchableOpacity>
-
-      {/* Modal */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View className="flex-1 bg-black/50 justify-center px-6">
             <View className="bg-white p-6 rounded-2xl">

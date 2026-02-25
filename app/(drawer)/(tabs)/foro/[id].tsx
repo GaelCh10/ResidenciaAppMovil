@@ -9,8 +9,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DetallePostScreen() {
   const { id, content, authorName, authorAvatar, time, likes } = useLocalSearchParams(); 
-  // Recibimos los datos básicos por parámetros para mostrar el post inmediatamente
-  
   const router = useRouter();
   const [comentarios, setComentarios] = useState<Comment[]>([]);
   const [nuevoComentario, setNuevoComentario] = useState('');
@@ -38,7 +36,7 @@ export default function DetallePostScreen() {
     try {
       await enviarComentario(id as string, nuevoComentario);
       setNuevoComentario('');
-      cargarComentarios(); // Recargar la lista para ver el nuevo
+      cargarComentarios(); 
     } catch (error: any) {
       Alert.alert("Error", "No se pudo enviar el comentario");
     } finally {
@@ -46,7 +44,6 @@ export default function DetallePostScreen() {
     }
   };
 
-  // Componente del Post Original (Encabezado de la lista)
   const HeaderPost = () => (
     <View className="bg-white p-5 mb-2 border-b border-gray-100 pb-6">
       <View className="flex-row items-center mb-4">
@@ -76,7 +73,6 @@ export default function DetallePostScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-secondary-200" edges={['top']}> 
-      {/* Configuración de Header de navegación */}
       <Stack.Screen options={{ title: 'Comentarios', headerBackTitle: 'Foro', headerShown: true }} />
 
       <KeyboardAvoidingView 
@@ -115,7 +111,6 @@ export default function DetallePostScreen() {
           }
         />
 
-        {/* BARRA DE INPUT */}
         <View className="bg-white p-3 border-t border-gray-200 flex-row items-end pb-8">
             <TextInput
                 className="flex-1 bg-gray-100 rounded-2xl px-4 py-3 min-h-[50px] max-h-[100px] text-base mr-3"

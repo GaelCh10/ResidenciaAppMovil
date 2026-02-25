@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "SHBEEY",
+    "name": "Shbbey",
     "slug": "navigation-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo-snfondo.png",
-    "scheme": "navigationapp",
+    "scheme": "shbeey",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -18,9 +18,9 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/logo-snfondo.png",
+        "backgroundImage": "./assets/images/logo-snfondo.png",
+        "monochromeImage": "./assets/images/logo-snfondo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -34,7 +34,8 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/logo.png"
+      "favicon": "./assets/images/logo.png",
+      "crossOriginIsolated": true
     },
     "plugins": [
       "expo-router",

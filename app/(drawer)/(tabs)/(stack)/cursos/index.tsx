@@ -11,9 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const CursosPantalla = () => {
-  // EL HOOK HACE TODO EL TRABAJO (Carga, Loading y Sincronización)
   const { data: categorias, loading } = useCategoriasOffline();
-
   const [hover, setHover] = useState<string | null>(null);
 
   if (loading) {
@@ -26,7 +24,7 @@ const CursosPantalla = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-secondary-200 px-4 pt-4">
-      <Text className="text-primary text-3xl font-work-black text-center mb-4">
+      <Text className="text-secondary text-3xl font-work-black text-center mb-4">
         Cursos
       </Text>
 
@@ -39,7 +37,7 @@ const CursosPantalla = () => {
               onPress={() =>
                 setHover(hover === categoria.id ? null : categoria.id)
               }
-              className="bg-primary rounded-3xl py-3 px-5"
+              className="bg-blueone rounded-3xl py-3 px-5"
             >
               <Text className="text-white text-lg text-center font-work-black">
                 {categoria.name}

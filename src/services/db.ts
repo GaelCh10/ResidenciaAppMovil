@@ -4,23 +4,22 @@ const db = SQLite.openDatabaseSync("lsm_offline.db");
 
 export const initDB = async () => {
   try {
-    console.log("🚀 [DB] Iniciando inicialización de la base de datos local...");
+    console.log("inicializacion DB local");
 
-    // 1. Borrar tablas antiguas (Opcional, útil en desarrollo para limpiar)
-    // console.log("🗑️ [DB] Limpiando esquema anterior...");
-    // await db.execAsync(`
-    //   DROP TABLE IF EXISTS courses;
-    //   DROP TABLE IF EXISTS levels;
-    //   DROP TABLE IF EXISTS categories;
-    //   DROP TABLE IF EXISTS lessons;
-    //   DROP TABLE IF EXISTS quiz_questions;
-    //   DROP TABLE IF EXISTS dictionary_categories;
-    //   DROP TABLE IF EXISTS dictionary_entries;
-    // `);
-    // console.log("✅ [DB] Esquema anterior limpiado.");
+    // Borrar tablas antiguas (si es necesario), para evitar conflictos comentar los drops, a menos que se 
+    //edite la estructura de las tablas pues borra la informacion local cada que se ejecuta la app, dejando
+    //inutil el modo offline, se recomienda comentar los drops despues de la primera ejecucion, a menos que se quiera reiniciar la base de datos local
+    await db.execAsync(`
+      DROP TABLE IF EXISTS courses;
+      DROP TABLE IF EXISTS levels;
+      DROP TABLE IF EXISTS categories;
+      DROP TABLE IF EXISTS lessons;
+      DROP TABLE IF EXISTS quiz_questions;
+      DROP TABLE IF EXISTS dictionary_categories;
+      DROP TABLE IF EXISTS dictionary_entries;
+    `);
 
-    // 2. Crear tablas
-    console.log("🏗️ [DB] Creando tablas nuevas...");
+    console.log(" DataBase local creada" );
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
       
@@ -64,8 +63,9 @@ export const initDB = async () => {
         course_id TEXT NOT NULL,
         question_text TEXT,
         media_url TEXT,
-        options TEXT,
-        correct_answer TEXT
+        options TEXT,        
+        correct_answer TEXT,         
+        question_type TEXT
       );
 
       CREATE TABLE IF NOT EXISTS dictionary_categories (
@@ -92,15 +92,15 @@ export const initDB = async () => {
       );
     `);
     
-    // 3. VERIFICACIÓN: Consultamos a SQLite qué tablas existen realmente
+    
     const tables = await db.getAllAsync(
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
     );
-    console.log("✅ [DB] Base de datos lista. Tablas creadas:", JSON.stringify(tables, null, 2));
+    console.log("Base de datos lista. Tablas creadas:", JSON.stringify(tables, null, 2));
     
     return true; 
   } catch (error) {
-    console.error("❌ [DB] Error FATAL iniciando DB local:", error);
+    console.error(" Error FATAL iniciando DB local:", error);
     return false;
   }
 };

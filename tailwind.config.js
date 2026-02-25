@@ -10,9 +10,10 @@ module.exports = {
 
       colors: {
         primary: '#367FDE',
+        blueone: '#0b1973',
         // DEFINIMOS UN COLOR Y SUS INSTENSIDADES  
         secondary:{
-          DEFAULT: '#E3EBF6',
+          DEFAULT: '#fa6e06',
           100:'#E6EDF7',
           200: '#F1F7FF',
         } 

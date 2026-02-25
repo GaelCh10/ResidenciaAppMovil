@@ -1,6 +1,8 @@
 import SmartMedia from "@/components/shared/SmartMedia";
 import { buscarPalabraOffline } from "@/src/hooks/useOfflineData";
 import { Ionicons } from "@expo/vector-icons";
+import { DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -10,13 +12,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TraductorScreen() {
+  const navigation = useNavigation();
   const [input, setInput] = useState("");
   const [resultado, setResultado] = useState<any>(null);
   const [buscando, setBuscando] = useState(false);
 
-  // Función de búsqueda manual
+  //busqueda manual
   const traducir = async () => {
     if (!input.trim()) return;
     
@@ -24,11 +28,10 @@ export default function TraductorScreen() {
     setBuscando(true);
     setResultado(null);
 
-    // Usamos la función Offline
     const coincidencias: any[] = await buscarPalabraOffline(input.trim());
-
+    // mejor coincidencia
     if (coincidencias.length > 0) {
-      setResultado(coincidencias[0]); // Mostramos la mejor coincidencia
+      setResultado(coincidencias[0]); 
     } else {
       setResultado("nofound");
     }
@@ -36,22 +39,29 @@ export default function TraductorScreen() {
   };
 
   return (
-    <View className="flex-1 bg-secondary-200 p-6">
-      
-      {/* --- HEADER --- */}
-      <View className="mt-6 mb-8 items-center">
-        <View className="w-16 h-16 bg-primary rounded-3xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
+    <SafeAreaView className="flex-1 bg-secondary-200 px-6 pt-2">
+      <View className="flex-row justify-between items-center mb-6 mt-2">
+        <View>
+            <Text className="text-3xl font-black text-secondary">Traductor</Text>
+            <Text className="text-gray-500 text-sm">Español a LSM</Text>
+        </View>
+        <TouchableOpacity 
+            onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} 
+            className="bg-white p-3 rounded-full shadow-sm"
+        >
+            <Ionicons name="menu" size={24} color="#0b1973" />
+        </TouchableOpacity>
+      </View>
+
+      <View className="mt-2 mb-8 items-center">
+        <View className="w-16 h-16 bg-blueone rounded-3xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
             <Ionicons name="language" size={32} color="white" />
         </View>
-        <Text className="text-center font-work-black text-3xl text-primary mb-1">
-            Diccionario LSM
-        </Text>
         <Text className="text-center text-gray-500 font-work-regular">
             Escribe una palabra para ver su seña
         </Text>
       </View>
 
-      {/* --- BARRA DE BÚSQUEDA --- */}
       <View className="bg-white p-2 pl-5 rounded-3xl flex-row items-center mb-8 shadow-sm border border-gray-100">
         <TextInput
           value={input}
@@ -65,8 +75,7 @@ export default function TraductorScreen() {
           returnKeyType="search"
           onSubmitEditing={traducir}
         />
-        
-        {/* Botón de Buscar */}
+
         <TouchableOpacity 
             onPress={traducir} 
             className={`p-4 rounded-2xl ${input.trim() ? 'bg-primary' : 'bg-gray-200'}`}
@@ -76,7 +85,6 @@ export default function TraductorScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* --- ESTADO DE CARGA --- */}
       {buscando && (
         <View className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color="#2563EB" />
@@ -84,7 +92,6 @@ export default function TraductorScreen() {
         </View>
       )}
 
-      {/* --- RESULTADO NO ENCONTRADO --- */}
       {resultado === "nofound" && !buscando && (
         <View className="items-center mt-8 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
           <View className="bg-red-50 p-4 rounded-full mb-4">
@@ -100,11 +107,8 @@ export default function TraductorScreen() {
         </View>
       )}
 
-      {/* --- RESULTADO EXITOSO --- */}
       {resultado && resultado !== "nofound" && !buscando && (
         <View className="flex-1 bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 mb-6">
-          
-          {/* VISOR MULTIMEDIA */}
           <View className="w-full flex-1 bg-black relative">
             <SmartMedia
               uri={resultado.media_url}
@@ -115,19 +119,16 @@ export default function TraductorScreen() {
               useNativeControls={true}
             />
           </View>
-
-          {/* INFORMACIÓN */}
+          
           <View className="p-6 bg-white border-t border-gray-100 items-center">
             <Text className="text-xs text-blue-500 font-bold uppercase tracking-widest mb-2 bg-blue-50 px-3 py-1 rounded-full">
               Traducción
             </Text>
             <Text
-              className="text-4xl font-work-black text-gray-900 capitalize text-center mb-1"
+              className="text-4xl LsmVulpy text-gray-900 capitalize text-center mb-1"
             >
               {resultado.word}
-            </Text>
-            
-            {/* Si quieres mostrar la glosa en fuente de señas */}
+            </Text>         
             <Text
                 style={{ fontFamily: "LsmVulpy" }}
                 className="text-5xl text-secondary-500 text-center mt-2"
@@ -137,6 +138,6 @@ export default function TraductorScreen() {
           </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }

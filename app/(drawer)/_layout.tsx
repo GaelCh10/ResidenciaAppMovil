@@ -8,56 +8,74 @@ const DrawerLayout = () => {
     <Drawer
       drawerContent={customDrawer}
       screenOptions={{
-        headerShown: false, // Ocultamos el header del drawer para usar los internos si queremos
-        overlayColor: "rgba(0,0,0,0.4)",
-        drawerActiveTintColor: "blue",
+        headerShown: false,
+        overlayColor: "rgba(11, 25, 115, 0.4)", 
+        drawerStyle: {
+          backgroundColor: "#ffffff",
+          width: 280,
+        },
+
+        drawerActiveTintColor: "#ffffff", 
+        drawerActiveBackgroundColor: "#0b1973", 
+        drawerInactiveTintColor: "#64748b", 
+        drawerInactiveBackgroundColor: "transparent",
+
+        drawerItemStyle: {
+          borderRadius: 16, 
+          paddingHorizontal: 8,
+          marginVertical: 4,
+          marginHorizontal: 16, 
+        },
+
+        drawerLabelStyle: {
+          fontFamily: "WorkSans-Bold",
+          fontSize: 16,
+          marginLeft: -10,
+        },
         sceneStyle: { backgroundColor: "white" },
       }}
     >
-      {/* 1. INICIO (Lleva a los Tabs que configuramos arriba) */}
+
       <Drawer.Screen
         name="(tabs)"
         options={{
-          drawerLabel: "Bienvenido",
+          drawerLabel: "Inicio",
           title: "LSM",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={22} color={color} />
           ),
         }}
       />
 
-      {/* 2. AVANCE (Ahora es independiente de los tabs) */}
       <Drawer.Screen
         name="avance/index"
         options={{
-          drawerLabel: "Avance",
+          drawerLabel: "Mi Avance",
           title: "Tus avances",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="trending-up-outline" size={size} color={color} />
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={22} color={color} />
           ),
         }}
       />
 
-      {/* 3. DICCIONARIO */}
       <Drawer.Screen
         name="diccionario"
         options={{
           drawerLabel: "Diccionario",
           title: "Diccionario",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="glasses-outline" size={size} color={color} />
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "library" : "library-outline"} size={22} color={color} />
           ),
         }}
       />
 
-      {/* 4. TRADUCTOR */}
       <Drawer.Screen
         name="traductor"
         options={{
           drawerLabel: "Traductor",
           title: "Traductor",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="language-outline" size={size} color={color} />
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "language" : "language-outline"} size={22} color={color} />
           ),
         }}
       />
@@ -65,20 +83,17 @@ const DrawerLayout = () => {
       <Drawer.Screen
         name="admin"
         options={{
-          drawerLabel: "Administrador",
+          drawerLabel: "Panel de Gestión",
           title: "Gestión",
-          drawerItemStyle: { display: "flex" }, // Podrías ocultarlo visualmente si prefieres
-          drawerIcon: ({ color, size }) => (
+          drawerIcon: ({ color, size, focused }) => (
             <Ionicons
-              name="shield-checkmark-outline"
-              size={size}
+              name={focused ? "shield-checkmark" : "shield-checkmark-outline"}
+              size={22}
               color={color}
             />
           ),
         }}
       />
-
-
     </Drawer>
   );
 };

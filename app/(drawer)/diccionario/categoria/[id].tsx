@@ -1,14 +1,11 @@
 import SmartMedia from '@/components/shared/SmartMedia';
+import { useDiccionarioPalabrasOffline } from '@/src/hooks/useOfflineData';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { FlatList, Modal, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// IMPORTANTE: Hook Offline
-import { useDiccionarioPalabrasOffline } from '@/src/hooks/useOfflineData';
-
-// Definimos la interfaz localmente o importamos (opcional, para TS)
 interface EntradaDiccionario {
   id: string;
   word: string;
@@ -18,14 +15,10 @@ interface EntradaDiccionario {
 
 export default function ListaPalabras() {
   const { id, nombre } = useLocalSearchParams();
-
-  // USAMOS EL HOOK OFFLINE
   const { data: palabras, loading } = useDiccionarioPalabrasOffline(id ? id.toString() : '');
-
   const [filtro, setFiltro] = useState('');
   const [palabraSeleccionada, setPalabraSeleccionada] = useState<EntradaDiccionario | null>(null);
 
-  // Filtrado (se hace en memoria sobre los datos locales)
   const palabrasFiltradas = palabras.filter((p: any) =>
     p.word.toLowerCase().includes(filtro.toLowerCase())
   );
@@ -34,7 +27,6 @@ export default function ListaPalabras() {
     <SafeAreaView className="flex-1 bg-secondary-200 px-4">
       <Stack.Screen options={{ title: nombre as string || 'Palabras', headerBackTitle: 'Diccionario' }} />
 
-      {/* Buscador */}
       <View className="bg-white rounded-2xl flex-row items-center px-4 py-3 mb-4 shadow-sm border border-gray-100 mt-2">
         <Ionicons name="search" size={20} color="gray" />
         <TextInput
@@ -72,20 +64,34 @@ export default function ListaPalabras() {
         />
       )}
 
-      {/* MODAL (SmartMedia ya maneja la carga offline del video/imagen) */}
       <Modal visible={palabraSeleccionada !== null} animationType="fade" transparent={true}>
         <View className="flex-1 bg-black/80 justify-center items-center px-4">
           <View className="bg-white w-full rounded-3xl p-4 items-center">
 
             <View className="w-full flex-row justify-between items-center mb-4">
               <Text className="text-2xl font-work-black text-primary">
-                {palabraSeleccionada?.word}
+                Palabra en español: {palabraSeleccionada?.word}
               </Text>
+
               <TouchableOpacity onPress={() => setPalabraSeleccionada(null)}>
                 <Ionicons name="close" size={30} color="#333" />
               </TouchableOpacity>
             </View>
+             <View className="w-full flex-row  mb-2"> 
+            <Text className="text-xl  text-secondary font-work-black flex-row w-1/4" >
+            Deletreo: 
+            </Text>
+              <Text className="text-xl  text-gray-700 flex-row " 
+              style={{ fontFamily: 'LsmVulpy',                 
+                       letterSpacing: 12,
+                       fontSize: 22,
+                       
+              }}>
+                {palabraSeleccionada?.word}
+              </Text>
 
+
+              </View>
             <View className="w-full h-64 bg-gray-100 rounded-2xl overflow-hidden mb-6">
               <SmartMedia
                 uri={palabraSeleccionada?.media_url}

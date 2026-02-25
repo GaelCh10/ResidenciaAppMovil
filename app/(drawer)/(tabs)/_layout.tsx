@@ -6,13 +6,12 @@ const TabsLayout = () => {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false, // <--- IMPORTANTE: Esto quita el doble encabezado
+        headerShown: false, 
         tabBarActiveTintColor: "white",
         tabBarShowLabel: false,
-        tabBarStyle: { backgroundColor: "#0A5FC7" },
+        tabBarStyle: { backgroundColor: "#0b1973" },
       }}
     >
-      {/* 1. Cursos (Stack principal) */}
       <Tabs.Screen
         name="(stack)"
         options={{
@@ -22,8 +21,6 @@ const TabsLayout = () => {
           ),
         }}
       />
-
-      {/* 2. Juegos */}
       <Tabs.Screen
         name="juegos"
         options={{
@@ -33,8 +30,6 @@ const TabsLayout = () => {
           ),
         }}
       />
-
-      {/* 3. Foro */}
       <Tabs.Screen
         name="foro"
         options={{
@@ -44,8 +39,6 @@ const TabsLayout = () => {
           ),
         }}
       />
-
-      {/* 4. Perfil */}
       <Tabs.Screen
         name="user/index"
         options={{

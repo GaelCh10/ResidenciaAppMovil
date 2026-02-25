@@ -5,12 +5,10 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function AdminWords() {
-  const { id, nombre } = useLocalSearchParams(); // Recibimos ID de la categoría seleccionada
+  const { id, nombre } = useLocalSearchParams();
   const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  
-  // Estados del formulario
   const [editingId, setEditingId] = useState<string | null>(null);
   const [word, setWord] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
@@ -33,8 +31,7 @@ export default function AdminWords() {
 
   const guardarPalabra = async () => {
     if (!word.trim() || !mediaUrl.trim()) return Alert.alert("Falta información", "Nombre y URL son obligatorios");
-    
-    // Payload para enviar a Supabase
+
     const payload = { 
         category_id: id, 
         word: word.trim(), 
@@ -89,7 +86,6 @@ export default function AdminWords() {
 
   return (
     <View className="flex-1 bg-gray-50 p-4">
-      {/* Título Dinámico según la categoría elegida */}
       <Stack.Screen options={{ title: nombre ? `Palabras: ${nombre}` : 'Palabras', headerBackTitle: 'Categorías' }} />
       
       {loading ? <ActivityIndicator className="mt-10" /> : (
@@ -99,7 +95,6 @@ export default function AdminWords() {
             renderItem={({ item }) => (
                 <View className="bg-white p-3 rounded-xl mb-2 flex-row justify-between items-center shadow-sm border border-gray-100">
                     <View className="flex-row items-center flex-1">
-                        {/* Preview pequeño de la imagen/video */}
                         <View className="w-12 h-12 bg-gray-100 rounded-lg mr-3 overflow-hidden border border-gray-200 justify-center items-center">
                             {item.media_type === 'video' ? 
                                 <Ionicons name="videocam" size={20} color="gray"/> :
@@ -125,13 +120,9 @@ export default function AdminWords() {
             ListEmptyComponent={<Text className="text-center text-gray-400 mt-10">No hay palabras en esta categoría.</Text>}
         />
       )}
-
-      {/* FAB Agregar */}
       <TouchableOpacity onPress={() => abrirModal()} className="absolute bottom-10 right-6 bg-primary w-14 h-14 rounded-full justify-center items-center shadow-lg">
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
-
-      {/* MODAL FORMULARIO */}
       <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
         <View className="flex-1 bg-white p-6">
             <Text className="text-2xl font-bold mb-6 text-center text-gray-800">{editingId ? 'Editar' : 'Nueva'} Palabra</Text>

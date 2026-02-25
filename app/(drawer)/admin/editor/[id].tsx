@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function AdminEditor() {
-  const { id } = useLocalSearchParams(); // Course ID
+  const { id } = useLocalSearchParams(); 
   const [course, setCourse] = useState<any>(null);
   const [lessons, setLessons] = useState<any[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -17,7 +17,11 @@ export default function AdminEditor() {
   
   // Datos Temporales
   const [tempLesson, setTempLesson] = useState<any>({});
-  const [tempQuiz, setTempQuiz] = useState<any>({ options: ['','',''], media_url: '' });
+  const [tempQuiz, setTempQuiz] = useState<any>({ 
+      options: ['','',''], 
+      media_url: '', 
+      question_type: 'text' 
+  });
 
   useEffect(() => { cargarTodo(); }, [id]);
 
@@ -26,7 +30,7 @@ export default function AdminEditor() {
     // 1. Curso
     const { data: c } = await supabase.from('courses').select('*').eq('id', id).single();
     if (c) setCourse(c);
-    // 2. Lecciones (Ordenadas por índice)
+    // 2. Lecciones
     const { data: l } = await supabase.from('lessons').select('*').eq('course_id', id).order('order_index');
     if (l) setLessons(l);
     // 3. Quiz
@@ -35,7 +39,6 @@ export default function AdminEditor() {
     setLoading(false);
   };
 
-  // --- LECCIONES ---
   const guardarLeccion = async () => {
     if (!tempLesson.spanish_text) {
         return Alert.alert("Falta información", "Debes escribir el texto en español.");
@@ -48,7 +51,6 @@ export default function AdminEditor() {
         image_url: tempLesson.image_url,
         spanish_text: tempLesson.spanish_text,
         lsm_text_code: tempLesson.lsm_text_code,
-        // Convertimos el string del input a número. Si está vacío, lo pone al final.
         order_index: parseInt(tempLesson.order_index) || lessons.length + 1
     };
     
@@ -71,18 +73,23 @@ export default function AdminEditor() {
     ]);
   };
 
-  // --- QUIZ ---
   const guardarQuiz = async () => {
     if (!tempQuiz.question_text) return Alert.alert("Falta la pregunta");
-    if (tempQuiz.options.some((opt: string) => opt.trim() === '')) return Alert.alert("Completa las 3 opciones");
-    if (!tempQuiz.correct_answer) return Alert.alert("Selecciona la respuesta correcta (toca una opción)");
+    
+    const minOptions = tempQuiz.question_type === 'image' ? 4 : 3;
+    if (tempQuiz.options.length < minOptions || tempQuiz.options.some((opt: string) => opt.trim() === '')) {
+        return Alert.alert(`Completa las ${minOptions} opciones.`);
+    }
+    
+    if (!tempQuiz.correct_answer) return Alert.alert("Selecciona la respuesta correcta.");
 
     const payload = {
         course_id: id,
         question_text: tempQuiz.question_text,
         media_url: tempQuiz.media_url,
         options: tempQuiz.options,
-        correct_answer: tempQuiz.correct_answer
+        correct_answer: tempQuiz.correct_answer,
+        question_type: tempQuiz.question_type 
     };
 
     const { error } = tempQuiz.id 
@@ -94,6 +101,15 @@ export default function AdminEditor() {
         setQuizModal(false);
         cargarTodo();
     }
+  };
+
+  const cambiarTipoPregunta = (tipo: 'text' | 'image') => {
+      setTempQuiz({
+          ...tempQuiz,
+          question_type: tipo,
+          options: tipo === 'image' ? ['','','',''] : ['','',''], 
+          correct_answer: '' 
+      });
   };
 
   const borrarQuiz = async (qid: string) => {
@@ -117,14 +133,11 @@ export default function AdminEditor() {
       <Stack.Screen options={{ title: course ? `Editando: ${course.title}` : 'Editor', headerBackTitle: 'Cursos' }} />
 
       <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: 50 }}>
-        
-        {/* SECCIÓN LECCIONES */}
         <View className="mb-8">
             <View className="flex-row justify-between items-center mb-3">
                 <Text className="font-bold text-lg text-gray-800">Lecciones ({lessons.length})</Text>
                 <TouchableOpacity 
                     onPress={() => { 
-                        // Al crear, sugerimos el siguiente número de orden
                         setTempLesson({ type: 'video', order_index: (lessons.length + 1).toString() }); 
                         setLessonModal(true); 
                     }} 
@@ -138,7 +151,6 @@ export default function AdminEditor() {
                 <View key={l.id} className="bg-white p-3 rounded-lg mb-2 border border-gray-200 flex-row justify-between items-center shadow-sm">
                     <TouchableOpacity 
                         onPress={() => { 
-                            // Al editar, convertimos el número order_index a string para el input
                             setTempLesson({ ...l, order_index: l.order_index?.toString() || '' }); 
                             setLessonModal(true); 
                         }} 
@@ -156,11 +168,10 @@ export default function AdminEditor() {
             ))}
         </View>
 
-        {/* SECCIÓN QUIZ */}
         <View className="mb-20">
             <View className="flex-row justify-between items-center mb-3">
                 <Text className="font-bold text-lg text-gray-800">Evaluación ({questions.length})</Text>
-                <TouchableOpacity onPress={() => { setTempQuiz({options:['','',''], media_url: ''}); setQuizModal(true); }} className="bg-orange-100 px-3 py-1 rounded-full"><Text className="text-orange-700 font-bold">+ Pregunta</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { setTempQuiz({options:['','',''], media_url: '', question_type: 'text'}); setQuizModal(true); }} className="bg-orange-100 px-3 py-1 rounded-full"><Text className="text-orange-700 font-bold">+ Pregunta</Text></TouchableOpacity>
             </View>
             {questions.map((q, idx) => (
                 <View key={q.id} className="bg-white p-4 rounded-xl mb-3 border border-gray-200 shadow-sm">
@@ -169,18 +180,25 @@ export default function AdminEditor() {
                         <TouchableOpacity onPress={() => borrarQuiz(q.id)}><Ionicons name="trash-outline" size={20} color="red" /></TouchableOpacity>
                     </View>
                     
-                    {q.media_url && (
-                        <View className="flex-row items-center mb-2 bg-gray-50 p-1 rounded self-start">
-                            <Ionicons name="image-outline" size={14} color="gray" />
-                            <Text className="text-xs text-gray-500 ml-1">Con Multimedia</Text>
+                    <View className="flex-row gap-2 mb-2">
+                        <View className={`px-2 py-0.5 rounded ${q.question_type === 'image' ? 'bg-purple-100' : 'bg-blue-100'}`}>
+                            <Text className={`text-[10px] font-bold ${q.question_type === 'image' ? 'text-purple-700' : 'text-blue-700'}`}>
+                                {q.question_type === 'image' ? 'IMÁGENES' : 'TEXTO'}
+                            </Text>
                         </View>
-                    )}
+                        {q.media_url && (
+                            <View className="flex-row items-center bg-gray-50 px-2 py-0.5 rounded">
+                                <Ionicons name="image-outline" size={10} color="gray" />
+                                <Text className="text-[10px] text-gray-500 ml-1">Media</Text>
+                            </View>
+                        )}
+                    </View>
 
                     <View className="flex-row flex-wrap gap-2">
                         {q.options.map((opt: string, i: number) => (
                             <View key={i} className={`px-2 py-1 rounded border ${opt === q.correct_answer ? 'bg-green-100 border-green-300' : 'bg-gray-50 border-gray-100'}`}>
-                                <Text className={`text-xs ${opt === q.correct_answer ? 'text-green-700 font-bold' : 'text-gray-500'}`}>
-                                    {opt} {opt === q.correct_answer && '✓'}
+                                <Text className={`text-xs ${opt === q.correct_answer ? 'text-green-700 font-bold' : 'text-gray-500'}`} numberOfLines={1}>
+                                    {q.question_type === 'image' ? 'Imagen ' + (i+1) : opt} {opt === q.correct_answer && '✓'}
                                 </Text>
                             </View>
                         ))}
@@ -194,12 +212,10 @@ export default function AdminEditor() {
         </View>
       </ScrollView>
 
-      {/* --- MODAL LECCIÓN --- */}
       <Modal visible={lessonModal} animationType="slide" presentationStyle="pageSheet">
         <View className="flex-1 bg-gray-50 p-6">
             <Text className="text-xl font-bold mb-6 text-center">Editar Lección</Text>
             
-            {/* INPUT DE ORDEN (NUEVO) */}
             <View className="flex-row gap-2 mb-3">
                 <View className="flex-1">
                     <Text className="label">Orden</Text>
@@ -228,7 +244,6 @@ export default function AdminEditor() {
                 autoCapitalize='none' 
             />
 
-            {/* IMAGEN ILUSTRATIVA */}
             <Text className="label">URL Imagen Ilustrativa </Text>
             <TextInput 
                 value={tempLesson.image_url} 
@@ -250,65 +265,94 @@ export default function AdminEditor() {
         </View>
       </Modal>
 
-      {/* --- MODAL QUIZ --- */}
       <Modal visible={quizModal} animationType="slide" presentationStyle="pageSheet">
         <ScrollView className="flex-1 bg-gray-50 p-6">
-            <Text className="text-xl font-bold mb-6 text-center">Configurar Pregunta</Text>
-            
-            <Text className="label">Pregunta</Text>
-            <TextInput 
-                placeholder="Ej: ¿Qué significa esta seña?" 
-                value={tempQuiz.question_text} 
-                onChangeText={t => setTempQuiz({...tempQuiz, question_text: t})} 
-                className="input font-bold text-lg" 
-            />
-            
-            <Text className="label">URL de Imagen/Video de Apoyo (Opcional)</Text>
-            <TextInput 
-                placeholder="https://..." 
-                value={tempQuiz.media_url} 
-                onChangeText={t => setTempQuiz({...tempQuiz, media_url: t})} 
-                className="input text-sm text-blue-600" 
-                autoCapitalize='none'
-            />
-            {tempQuiz.media_url ? (
-                <View className="w-full h-32 bg-gray-200 rounded-lg mb-4 items-center justify-center overflow-hidden border border-gray-300">
-                    <Image source={{ uri: tempQuiz.media_url }} style={{ width: '100%', height: '100%', resizeMode: 'contain' }} />
-                </View>
-            ) : null}
-
-            <Text className="label mt-2">OPCIONES DE RESPUESTA</Text>
-            <Text className="text-xs text-gray-400 mb-2">Escribe las 3 opciones y luego TOCA la correcta.</Text>
-            
-            {tempQuiz.options?.map((opt: string, idx: number) => (
-                <View key={idx} className="flex-row items-center mb-2">
-                    <TextInput 
-                        placeholder={`Opción ${idx+1}`} 
-                        value={opt} 
-                        onChangeText={t => {
-                            const newOpts = [...tempQuiz.options]; 
-                            newOpts[idx] = t; 
-                            let newCorrect = tempQuiz.correct_answer;
-                            if (tempQuiz.correct_answer === opt) newCorrect = t;
-                            setTempQuiz({...tempQuiz, options: newOpts, correct_answer: newCorrect});
-                        }} 
-                        className={`flex-1 p-3 rounded-lg border ${opt === tempQuiz.correct_answer && opt !== '' ? 'bg-green-50 border-green-500' : 'bg-white border-gray-200'}`} 
-                    />
-                    <TouchableOpacity 
-                        onPress={() => seleccionarCorrecta(opt)}
-                        className={`ml-2 w-10 h-10 rounded-full items-center justify-center border ${opt === tempQuiz.correct_answer && opt !== '' ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}`}
-                    >
-                        {opt === tempQuiz.correct_answer && opt !== '' && <Ionicons name="checkmark" size={24} color="white" />}
-                    </TouchableOpacity>
-                </View>
-            ))}
-
-            <View className="bg-orange-50 p-3 rounded-lg mb-6 mt-2 border border-orange-100">
-                <Text className="text-xs text-orange-800 font-bold text-center">
-                    Respuesta Correcta: {tempQuiz.correct_answer || "(Ninguna seleccionada)"}
-                </Text>
+            <Text className="text-xl font-bold mb-4 text-center">Configurar Pregunta</Text>
+            <View className="flex-row bg-gray-200 p-1 rounded-xl mb-6">
+                <TouchableOpacity 
+                    onPress={() => cambiarTipoPregunta('text')} 
+                    className={`flex-1 py-3 rounded-lg ${tempQuiz.question_type !== 'image' ? 'bg-white shadow-sm' : ''}`}
+                >
+                    <Text className="text-center font-bold">Texto (3 Opc)</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    onPress={() => cambiarTipoPregunta('image')} 
+                    className={`flex-1 py-3 rounded-lg ${tempQuiz.question_type === 'image' ? 'bg-white shadow-sm' : ''}`}
+                >
+                    <Text className="text-center font-bold">Imágenes (4 Opc)</Text>
+                </TouchableOpacity>
             </View>
 
+            <Text className="label">Pregunta</Text>
+            <TextInput 
+                placeholder={tempQuiz.question_type === 'image' ? "Ej: ¿Cuál es la seña de 'Hola'?" : "Ej: ¿Qué significa esta seña?"}
+                value={tempQuiz.question_text} 
+                onChangeText={t => setTempQuiz({...tempQuiz, question_text: t})} 
+                className="input font-bold text-lg mb-4" 
+            />
+
+            {tempQuiz.question_type === 'text' && (
+                <>
+                    <Text className="label">URL de Imagen/Video de la Seña</Text>
+                    <TextInput 
+                        placeholder="https://..." 
+                        value={tempQuiz.media_url} 
+                        onChangeText={t => setTempQuiz({...tempQuiz, media_url: t})} 
+                        className="input text-sm text-blue-600 mb-2" 
+                        autoCapitalize='none'
+                    />
+                    {tempQuiz.media_url ? (
+                        <View className="w-full h-40 bg-gray-200 rounded-xl mb-4 items-center justify-center overflow-hidden border border-gray-300">
+                            <Image 
+                                source={{ uri: tempQuiz.media_url }} 
+                                className="w-full h-full" 
+                                resizeMode="contain" 
+                            />
+                        </View>
+                    ) : null}
+                </>
+            )}
+
+            <Text className="label mt-4 mb-2">OPCIONES {tempQuiz.question_type === 'image' ? '(URLs de imágenes)' : '(Texto)'}</Text>
+            
+            <View className="flex-row flex-wrap justify-between">
+                {tempQuiz.options?.map((opt: string, idx: number) => (
+                    <View key={idx} className={`mb-4 ${tempQuiz.question_type === 'image' ? 'w-[48%]' : 'w-full'}`}>
+                        
+                        <TextInput 
+                            placeholder={tempQuiz.question_type === 'image' ? `URL Imagen ${idx+1}` : `Opción ${idx+1}`}
+                            value={opt} 
+                            onChangeText={t => {
+                                const newOpts = [...tempQuiz.options]; 
+                                newOpts[idx] = t; 
+                                let newCorrect = tempQuiz.correct_answer;
+                                if (tempQuiz.correct_answer === opt) newCorrect = t;
+                                setTempQuiz({...tempQuiz, options: newOpts, correct_answer: newCorrect});
+                            }} 
+                            className={`p-3 rounded-lg border text-xs ${opt === tempQuiz.correct_answer && opt !== '' ? 'bg-green-50 border-green-500' : 'bg-white border-gray-200'}`} 
+                            autoCapitalize={tempQuiz.question_type === 'image' ? 'none' : 'sentences'}
+                        />
+
+                        {tempQuiz.question_type === 'image' && opt !== '' && (
+                            <View className="h-20 w-full mt-2 bg-gray-200 rounded overflow-hidden border border-gray-300">
+                                <Image source={{ uri: opt }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                            </View>
+                        )}
+
+                        <TouchableOpacity 
+                            onPress={() => seleccionarCorrecta(opt)}
+                            className={`mt-2 p-2 rounded-lg items-center flex-row justify-center ${opt === tempQuiz.correct_answer && opt !== '' ? 'bg-green-500' : 'bg-gray-300'}`}
+                        >
+                            <Text className="text-white text-xs font-bold mr-1">
+                                {opt === tempQuiz.correct_answer && opt !== '' ? 'CORRECTA' : 'MARCAR CORRECTA'}
+                            </Text>
+                            {opt === tempQuiz.correct_answer && opt !== '' && <Ionicons name="checkmark" size={16} color="white" />}
+                        </TouchableOpacity>
+                    </View>
+                ))}
+            </View>
+
+            <View className="h-10"/>
             <View className="flex-row gap-4 mb-10">
                 <TouchableOpacity onPress={() => setQuizModal(false)} className="flex-1 bg-gray-200 p-4 rounded-xl"><Text className="text-center font-bold text-gray-700">Cancelar</Text></TouchableOpacity>
                 <TouchableOpacity onPress={guardarQuiz} className="flex-1 bg-orange-600 p-4 rounded-xl"><Text className="text-center font-bold text-white">Guardar</Text></TouchableOpacity>
