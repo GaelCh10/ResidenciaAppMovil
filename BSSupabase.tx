@@ -1,113 +1,14 @@
-CREATE TABLE public.categories (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  description text,
-  order_index integer DEFAULT 0,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT categories_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.certificates (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  category_id uuid NOT NULL,
-  pdf_url text,
-  issued_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT certificates_pkey PRIMARY KEY (id),
-  CONSTRAINT certificates_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
-  CONSTRAINT certificates_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id)
-);
-CREATE TABLE public.courses (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  level_id uuid NOT NULL,
-  title text NOT NULL,
-  description text,
-  cover_image_url text,
-  order_index integer DEFAULT 0,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT courses_pkey PRIMARY KEY (id),
-  CONSTRAINT courses_level_id_fkey FOREIGN KEY (level_id) REFERENCES public.levels(id)
-);
-CREATE TABLE public.dictionary_categories (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  image_url text,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT dictionary_categories_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.dictionary_entries (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  category_id uuid NOT NULL,
-  word text NOT NULL,
-  media_url text,
-  media_type USER-DEFINED DEFAULT 'image'::media_type,
-  definition text,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT dictionary_entries_pkey PRIMARY KEY (id),
-  CONSTRAINT dictionary_entries_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.dictionary_categories(id)
-);
-CREATE TABLE public.game_scores (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  game_type text NOT NULL,
-  category_id uuid,
-  score integer DEFAULT 0,
-  max_level_reached integer,
-  played_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT game_scores_pkey PRIMARY KEY (id),
-  CONSTRAINT game_scores_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
-  CONSTRAINT game_scores_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.dictionary_categories(id)
-);
-CREATE TABLE public.lessons (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  course_id uuid NOT NULL,
-  title text,
-  type USER-DEFINED DEFAULT 'video'::media_type,
-  content_url text,
-  spanish_text text,
-  lsm_text_code text,
-  order_index integer DEFAULT 0,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  image_url text,
-  CONSTRAINT lessons_pkey PRIMARY KEY (id),
-  CONSTRAINT lessons_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id)
-);
-CREATE TABLE public.levels (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  category_id uuid NOT NULL,
-  name text NOT NULL,
-  order_index integer DEFAULT 0,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT levels_pkey PRIMARY KEY (id),
-  CONSTRAINT levels_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id)
-);
-CREATE TABLE public.post_comments (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  post_id uuid NOT NULL,
-  user_id uuid NOT NULL,
-  content text NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT post_comments_pkey PRIMARY KEY (id),
-  CONSTRAINT post_comments_author_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
-  CONSTRAINT post_comments_post_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id)
-);
-CREATE TABLE public.post_likes (
-  user_id uuid NOT NULL,
-  post_id uuid NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT post_likes_pkey PRIMARY KEY (user_id, post_id),
-  CONSTRAINT post_likes_post_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id),
-  CONSTRAINT post_likes_user_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
-);
-CREATE TABLE public.posts (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  content text NOT NULL,
-  image_url text,
-  likes_count integer DEFAULT 0,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT posts_pkey PRIMARY KEY (id),
-  CONSTRAINT posts_author_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
-);
+-- ==============================================================================
+-- 1. TIPOS DE DATOS PERSONALIZADOS
+-- ==============================================================================
+CREATE TYPE public.media_type AS ENUM ('video', 'image');
+
+
+-- ==============================================================================
+-- 2. CREACIÓN DE TABLAS (CON BORRADO EN CASCADA)
+-- ==============================================================================
+
+-- 2.1 Tabla de Perfiles (Depende de auth.users de Supabase)
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
   full_name text,
@@ -122,8 +23,60 @@ CREATE TABLE public.profiles (
   birth_date date,
   gender text,
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
-  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
+
+-- 2.2 Categorías Generales
+CREATE TABLE public.categories (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  description text,
+  order_index integer DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT categories_pkey PRIMARY KEY (id)
+);
+
+-- 2.3 Niveles (Dependen de categories)
+CREATE TABLE public.levels (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  category_id uuid NOT NULL,
+  name text NOT NULL,
+  order_index integer DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT levels_pkey PRIMARY KEY (id),
+  CONSTRAINT levels_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE CASCADE
+);
+
+-- 2.4 Cursos (Dependen de levels)
+CREATE TABLE public.courses (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  level_id uuid NOT NULL,
+  title text NOT NULL,
+  description text,
+  cover_image_url text,
+  order_index integer DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT courses_pkey PRIMARY KEY (id),
+  CONSTRAINT courses_level_id_fkey FOREIGN KEY (level_id) REFERENCES public.levels(id) ON DELETE CASCADE
+);
+
+-- 2.5 Lecciones (Dependen de courses)
+CREATE TABLE public.lessons (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  course_id uuid NOT NULL,
+  title text,
+  type public.media_type DEFAULT 'video'::public.media_type,
+  content_url text,
+  spanish_text text,
+  lsm_text_code text,
+  order_index integer DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  image_url text,
+  CONSTRAINT lessons_pkey PRIMARY KEY (id),
+  CONSTRAINT lessons_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE
+);
+
+-- 2.6 Preguntas de Quiz (Dependen de courses)
 CREATE TABLE public.quiz_questions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   course_id uuid NOT NULL,
@@ -134,8 +87,10 @@ CREATE TABLE public.quiz_questions (
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   question_type text DEFAULT 'text'::text,
   CONSTRAINT quiz_questions_pkey PRIMARY KEY (id),
-  CONSTRAINT quiz_questions_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id)
+  CONSTRAINT quiz_questions_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE
 );
+
+-- 2.7 Progreso del Usuario (Depende de profiles y courses)
 CREATE TABLE public.user_progress (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
@@ -144,6 +99,176 @@ CREATE TABLE public.user_progress (
   quiz_score integer DEFAULT 0,
   last_accessed_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
   CONSTRAINT user_progress_pkey PRIMARY KEY (id),
-  CONSTRAINT user_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
-  CONSTRAINT user_progress_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id)
+  CONSTRAINT user_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT user_progress_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE
 );
+
+-- 2.8 Certificados (Dependen de profiles y categories)
+CREATE TABLE public.certificates (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  category_id uuid NOT NULL,
+  pdf_url text,
+  issued_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT certificates_pkey PRIMARY KEY (id),
+  CONSTRAINT certificates_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT certificates_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE CASCADE
+);
+
+-- 2.9 Categorías del Diccionario
+CREATE TABLE public.dictionary_categories (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  image_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT dictionary_categories_pkey PRIMARY KEY (id)
+);
+
+-- 2.10 Entradas del Diccionario (Dependen de dictionary_categories)
+CREATE TABLE public.dictionary_entries (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  category_id uuid NOT NULL,
+  word text NOT NULL,
+  media_url text,
+  media_type public.media_type DEFAULT 'image'::public.media_type,
+  definition text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT dictionary_entries_pkey PRIMARY KEY (id),
+  CONSTRAINT dictionary_entries_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.dictionary_categories(id) ON DELETE CASCADE
+);
+
+-- 2.11 Puntuación de Juegos (Dependen de profiles y dictionary_categories)
+CREATE TABLE public.game_scores (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  game_type text NOT NULL,
+  category_id uuid,
+  score integer DEFAULT 0,
+  max_level_reached integer,
+  played_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT game_scores_pkey PRIMARY KEY (id),
+  CONSTRAINT game_scores_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT game_scores_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.dictionary_categories(id) ON DELETE CASCADE
+);
+
+-- 2.12 Posts del Foro/Comunidad (Dependen de profiles)
+CREATE TABLE public.posts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  content text NOT NULL,
+  image_url text,
+  likes_count integer DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT posts_pkey PRIMARY KEY (id),
+  CONSTRAINT posts_author_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+-- 2.13 Comentarios en Posts (Dependen de profiles y posts)
+CREATE TABLE public.post_comments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  post_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  content text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT post_comments_pkey PRIMARY KEY (id),
+  CONSTRAINT post_comments_author_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT post_comments_post_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE
+);
+
+-- 2.14 Likes en Posts (Dependen de profiles y posts)
+CREATE TABLE public.post_likes (
+  user_id uuid NOT NULL,
+  post_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT post_likes_pkey PRIMARY KEY (user_id, post_id),
+  CONSTRAINT post_likes_post_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE,
+  CONSTRAINT post_likes_user_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+
+-- ==============================================================================
+-- 3. SEGURIDAD A NIVEL DE FILA (ROW LEVEL SECURITY - RLS)
+-- ==============================================================================
+
+-- Habilitar RLS en todas las tablas
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.levels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quiz_questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dictionary_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dictionary_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.game_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
+
+-- Función Helper para detectar si el usuario es Admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
+DECLARE
+  is_adm boolean;
+BEGIN
+  SELECT (role = 'admin') INTO is_adm FROM public.profiles WHERE id = auth.uid();
+  RETURN COALESCE(is_adm, false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- ==============================================================================
+-- 4. POLÍTICAS DE ACCESO (POLICIES)
+-- ==============================================================================
+
+-- 4.1 Contenido de Aprendizaje y Diccionario (Todos leen, solo Admin edita)
+CREATE POLICY "Lectura categorias" ON public.categories FOR SELECT USING (true);
+CREATE POLICY "Admin categorias" ON public.categories FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Lectura niveles" ON public.levels FOR SELECT USING (true);
+CREATE POLICY "Admin niveles" ON public.levels FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Lectura cursos" ON public.courses FOR SELECT USING (true);
+CREATE POLICY "Admin cursos" ON public.courses FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Lectura lecciones" ON public.lessons FOR SELECT USING (true);
+CREATE POLICY "Admin lecciones" ON public.lessons FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Lectura preguntas" ON public.quiz_questions FOR SELECT USING (true);
+CREATE POLICY "Admin preguntas" ON public.quiz_questions FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Lectura categorias dicc" ON public.dictionary_categories FOR SELECT USING (true);
+CREATE POLICY "Admin categorias dicc" ON public.dictionary_categories FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Lectura entradas dicc" ON public.dictionary_entries FOR SELECT USING (true);
+CREATE POLICY "Admin entradas dicc" ON public.dictionary_entries FOR ALL USING (public.is_admin());
+
+-- 4.2 Perfiles y Progreso Personal (Usuarios controlan lo suyo, Admin controla todo)
+CREATE POLICY "Lectura publica de perfiles" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Usuarios insertan su perfil" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Usuarios actualizan su perfil" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admin controla perfiles" ON public.profiles FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Usuarios ven/editan su progreso" ON public.user_progress FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Admin controla progresos" ON public.user_progress FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Usuarios ven/editan sus scores" ON public.game_scores FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Admin controla scores" ON public.game_scores FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Usuarios ven sus certificados" ON public.certificates FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Admin controla certificados" ON public.certificates FOR ALL USING (public.is_admin());
+
+-- 4.3 Comunidad/Foro (Usuarios interactúan con el contenido)
+CREATE POLICY "Lectura publica posts" ON public.posts FOR SELECT USING (true);
+CREATE POLICY "Usuarios crean posts" ON public.posts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Usuarios editan/borran sus posts" ON public.posts FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Usuarios editan/borran sus posts DELETE" ON public.posts FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Admin controla todos los posts" ON public.posts FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Lectura publica comentarios" ON public.post_comments FOR SELECT USING (true);
+CREATE POLICY "Usuarios crean/editan sus comentarios" ON public.post_comments FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Admin controla todos los comentarios" ON public.post_comments FOR ALL USING (public.is_admin());
+
+CREATE POLICY "Lectura publica likes" ON public.post_likes FOR SELECT USING (true);
+CREATE POLICY "Usuarios dan/quitan likes" ON public.post_likes FOR ALL USING (auth.uid() = user_id);
