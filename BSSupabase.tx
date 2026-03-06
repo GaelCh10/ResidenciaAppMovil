@@ -3,12 +3,10 @@
 -- ==============================================================================
 CREATE TYPE public.media_type AS ENUM ('video', 'image');
 
-
 -- ==============================================================================
 -- 2. CREACIÓN DE TABLAS (CON BORRADO EN CASCADA)
 -- ==============================================================================
 
--- 2.1 Tabla de Perfiles (Depende de auth.users de Supabase)
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
   full_name text,
@@ -26,7 +24,6 @@ CREATE TABLE public.profiles (
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- 2.2 Categorías Generales
 CREATE TABLE public.categories (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -36,7 +33,6 @@ CREATE TABLE public.categories (
   CONSTRAINT categories_pkey PRIMARY KEY (id)
 );
 
--- 2.3 Niveles (Dependen de categories)
 CREATE TABLE public.levels (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   category_id uuid NOT NULL,
@@ -47,7 +43,6 @@ CREATE TABLE public.levels (
   CONSTRAINT levels_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE CASCADE
 );
 
--- 2.4 Cursos (Dependen de levels)
 CREATE TABLE public.courses (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   level_id uuid NOT NULL,
@@ -60,7 +55,6 @@ CREATE TABLE public.courses (
   CONSTRAINT courses_level_id_fkey FOREIGN KEY (level_id) REFERENCES public.levels(id) ON DELETE CASCADE
 );
 
--- 2.5 Lecciones (Dependen de courses)
 CREATE TABLE public.lessons (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   course_id uuid NOT NULL,
@@ -76,7 +70,6 @@ CREATE TABLE public.lessons (
   CONSTRAINT lessons_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE
 );
 
--- 2.6 Preguntas de Quiz (Dependen de courses)
 CREATE TABLE public.quiz_questions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   course_id uuid NOT NULL,
@@ -90,7 +83,6 @@ CREATE TABLE public.quiz_questions (
   CONSTRAINT quiz_questions_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE
 );
 
--- 2.7 Progreso del Usuario (Depende de profiles y courses)
 CREATE TABLE public.user_progress (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
@@ -103,7 +95,6 @@ CREATE TABLE public.user_progress (
   CONSTRAINT user_progress_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE
 );
 
--- 2.8 Certificados (Dependen de profiles y categories)
 CREATE TABLE public.certificates (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
@@ -115,7 +106,6 @@ CREATE TABLE public.certificates (
   CONSTRAINT certificates_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE CASCADE
 );
 
--- 2.9 Categorías del Diccionario
 CREATE TABLE public.dictionary_categories (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -124,7 +114,6 @@ CREATE TABLE public.dictionary_categories (
   CONSTRAINT dictionary_categories_pkey PRIMARY KEY (id)
 );
 
--- 2.10 Entradas del Diccionario (Dependen de dictionary_categories)
 CREATE TABLE public.dictionary_entries (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   category_id uuid NOT NULL,
@@ -137,7 +126,6 @@ CREATE TABLE public.dictionary_entries (
   CONSTRAINT dictionary_entries_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.dictionary_categories(id) ON DELETE CASCADE
 );
 
--- 2.11 Puntuación de Juegos (Dependen de profiles y dictionary_categories)
 CREATE TABLE public.game_scores (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
@@ -151,7 +139,6 @@ CREATE TABLE public.game_scores (
   CONSTRAINT game_scores_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.dictionary_categories(id) ON DELETE CASCADE
 );
 
--- 2.12 Posts del Foro/Comunidad (Dependen de profiles)
 CREATE TABLE public.posts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
@@ -163,7 +150,6 @@ CREATE TABLE public.posts (
   CONSTRAINT posts_author_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 
--- 2.13 Comentarios en Posts (Dependen de profiles y posts)
 CREATE TABLE public.post_comments (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   post_id uuid NOT NULL,
@@ -175,7 +161,6 @@ CREATE TABLE public.post_comments (
   CONSTRAINT post_comments_post_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE
 );
 
--- 2.14 Likes en Posts (Dependen de profiles y posts)
 CREATE TABLE public.post_likes (
   user_id uuid NOT NULL,
   post_id uuid NOT NULL,
@@ -185,12 +170,9 @@ CREATE TABLE public.post_likes (
   CONSTRAINT post_likes_user_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 
-
 -- ==============================================================================
 -- 3. SEGURIDAD A NIVEL DE FILA (ROW LEVEL SECURITY - RLS)
 -- ==============================================================================
-
--- Habilitar RLS en todas las tablas
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.levels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
@@ -206,7 +188,6 @@ ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.post_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
 
--- Función Helper para detectar si el usuario es Admin
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean AS $$
 DECLARE
@@ -217,58 +198,247 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-
--- ==============================================================================
--- 4. POLÍTICAS DE ACCESO (POLICIES)
--- ==============================================================================
-
--- 4.1 Contenido de Aprendizaje y Diccionario (Todos leen, solo Admin edita)
 CREATE POLICY "Lectura categorias" ON public.categories FOR SELECT USING (true);
 CREATE POLICY "Admin categorias" ON public.categories FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Lectura niveles" ON public.levels FOR SELECT USING (true);
 CREATE POLICY "Admin niveles" ON public.levels FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Lectura cursos" ON public.courses FOR SELECT USING (true);
 CREATE POLICY "Admin cursos" ON public.courses FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Lectura lecciones" ON public.lessons FOR SELECT USING (true);
 CREATE POLICY "Admin lecciones" ON public.lessons FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Lectura preguntas" ON public.quiz_questions FOR SELECT USING (true);
 CREATE POLICY "Admin preguntas" ON public.quiz_questions FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Lectura categorias dicc" ON public.dictionary_categories FOR SELECT USING (true);
 CREATE POLICY "Admin categorias dicc" ON public.dictionary_categories FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Lectura entradas dicc" ON public.dictionary_entries FOR SELECT USING (true);
 CREATE POLICY "Admin entradas dicc" ON public.dictionary_entries FOR ALL USING (public.is_admin());
-
--- 4.2 Perfiles y Progreso Personal (Usuarios controlan lo suyo, Admin controla todo)
 CREATE POLICY "Lectura publica de perfiles" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Usuarios insertan su perfil" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Usuarios actualizan su perfil" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Admin controla perfiles" ON public.profiles FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Usuarios ven/editan su progreso" ON public.user_progress FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Admin controla progresos" ON public.user_progress FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Usuarios ven/editan sus scores" ON public.game_scores FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Admin controla scores" ON public.game_scores FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Usuarios ven sus certificados" ON public.certificates FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admin controla certificados" ON public.certificates FOR ALL USING (public.is_admin());
-
--- 4.3 Comunidad/Foro (Usuarios interactúan con el contenido)
 CREATE POLICY "Lectura publica posts" ON public.posts FOR SELECT USING (true);
 CREATE POLICY "Usuarios crean posts" ON public.posts FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Usuarios editan/borran sus posts" ON public.posts FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Usuarios editan/borran sus posts DELETE" ON public.posts FOR DELETE USING (auth.uid() = user_id);
 CREATE POLICY "Admin controla todos los posts" ON public.posts FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Lectura publica comentarios" ON public.post_comments FOR SELECT USING (true);
 CREATE POLICY "Usuarios crean/editan sus comentarios" ON public.post_comments FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Admin controla todos los comentarios" ON public.post_comments FOR ALL USING (public.is_admin());
-
 CREATE POLICY "Lectura publica likes" ON public.post_likes FOR SELECT USING (true);
 CREATE POLICY "Usuarios dan/quitan likes" ON public.post_likes FOR ALL USING (auth.uid() = user_id);
+
+-- ==============================================================================
+-- 4. INSERCIÓN DE DATOS INICIALES (MIGRACIÓN)
+-- ==============================================================================
+
+-- 4.1. Perfiles
+INSERT INTO "public"."profiles" ("id", "full_name", "avatar_url", "created_at", "role", "username", "email", "first_name", "paternal_surname", "maternal_surname", "birth_date", "gender") VALUES 
+('4a9c034e-b05b-442c-a7af-f1cdb2342d5c', 'alexis', null, '2026-01-16 18:12:23.361546+00', 'user', 'alexis', null, null, null, null, null, null), 
+('9796f986-8bef-42fb-b5b8-8529753c82da', 'Nuevo  Usuario  uno', null, '2026-02-20 01:31:02.864084+00', 'user', 'NuevoU', null, 'Nuevo ', 'Usuario ', 'uno', '2002-10-04', 'F'), 
+('97c96103-3d47-438b-9b90-6c7a9f718ba7', 'Ana', null, '2026-01-19 18:31:04.425069+00', 'user', 'Ana', 'setttheboss10@gmail.com', null, null, null, null, null), 
+('bf428441-729d-4120-a711-25bc4721b66e', 'Gael Chavez ', 'https://wallpapercave.com/wp/wp7990003.jpg', '2026-01-16 17:13:22.813116+00', 'admin', null, null, null, null, null, null, null), 
+('e00edb9e-7a85-4848-a98a-56e0114c674e', 'Alexis Gael Garcia Chavez', null, '2026-02-04 11:33:29.245507+00', 'user', 'Helper01', null, 'Alexis Gael', 'Garcia', 'Chavez', '2002-10-04', 'M');
+
+-- 4.2. Categorías (Generales)
+INSERT INTO "public"."categories" ("id", "name", "description", "order_index", "created_at") VALUES 
+('1f39c7f8-2ae1-4095-aab9-836f8c219a3f', 'Basico', 'Primer nivel del curso de LSM', '2', '2026-01-19 20:22:05+00'), 
+('500efb6a-c64d-40ad-96bf-d9737672e1be', 'Avanzado', 'Sigue aprendiendo, eres todo un hablante', '4', '2026-01-19 20:23:42+00'), 
+('8adcbdec-fb5b-4084-bd47-def7041b8eaa', 'General', 'Conceptos introductorios y cultura general', '1', '2026-01-12 20:25:29.651779+00'), 
+('b1e4c67c-fe45-4034-8961-80ea59514149', 'Intermedio', 'Sigue reforzando tus conocimientos', '3', '2026-01-19 20:23:07+00');
+
+-- 4.3. Niveles
+INSERT INTO "public"."levels" ("id", "category_id", "name", "order_index", "created_at") VALUES 
+('3e7e2643-c7c0-4f06-91a0-86e258cc622d', '1f39c7f8-2ae1-4095-aab9-836f8c219a3f', 'Basico 1', '0', '2026-01-22 03:13:05.471586+00'), 
+('66eaac47-6b82-41a1-86b1-66cc0c793531', '1f39c7f8-2ae1-4095-aab9-836f8c219a3f', 'Basico 2', '2', '2026-01-30 07:03:07.713179+00'), 
+('739d85df-58fa-432d-9826-10e28dff1b15', '8adcbdec-fb5b-4084-bd47-def7041b8eaa', 'General 1', '0', '2026-01-22 03:12:34.403223+00'), 
+('e0962047-a728-4c05-8bc3-ca8e3d7667ee', 'b1e4c67c-fe45-4034-8961-80ea59514149', 'Intermedio l', '1', '2026-01-30 07:06:16.625054+00');
+
+-- 4.4. Cursos
+INSERT INTO "public"."courses" ("id", "level_id", "title", "description", "cover_image_url", "order_index", "created_at") VALUES 
+('00434505-cd36-4c99-a6e7-b04bfb97d7de', '3e7e2643-c7c0-4f06-91a0-86e258cc622d', 'Saludos y expresiones', 'Aprende a presentarte', '', '2', '2026-01-30 07:05:49.218203+00'), 
+('1429a520-94ea-4145-8b28-f58856f1eaff', '66eaac47-6b82-41a1-86b1-66cc0c793531', 'Dias', 'Aprende como decir los dias de la semana', '', '1', '2026-01-30 07:03:33.109958+00'), 
+('19c98cbc-5b48-4245-abe0-6cf311f6c6f0', 'e0962047-a728-4c05-8bc3-ca8e3d7667ee', 'Verbos lll(Mentales)', 'Aprende diferentes maneras de expresarte ', '', '2', '2026-01-30 07:07:42.894983+00'), 
+('2ce54395-8878-498e-b3cb-5e7aa307755b', 'e0962047-a728-4c05-8bc3-ca8e3d7667ee', 'Verbos lV (Salud)', 'Aprende a comunicar tu salud', '', '3', '2026-01-30 07:08:23.881577+00'), 
+('489c2037-b47a-4ef1-a682-50b6ec9289eb', '739d85df-58fa-432d-9826-10e28dff1b15', 'Abecedario I', 'Aprende el abecedario desde 0', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Pronombres/categoria-abecedario.png', '1', '2026-01-30 06:31:58.796082+00'), 
+('73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', '3e7e2643-c7c0-4f06-91a0-86e258cc622d', 'Pronombres y personas', 'Aprende a comunicarte con alguien', '', '1', '2026-01-30 07:05:23.000553+00'), 
+('91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', '739d85df-58fa-432d-9826-10e28dff1b15', 'Abecedario ll', 'Continua aprendiendo el abecedario', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/categoria-abecedario.png', '2', '2026-01-30 06:50:46.297626+00'), 
+('bec067d1-2cb5-4342-aae0-10f9cc413037', 'e0962047-a728-4c05-8bc3-ca8e3d7667ee', 'Verbos ll (Comunicacion)', 'Aprende diferentes formas de comunicacion', '', '1', '2026-01-30 07:07:00.433114+00'), 
+('e450af94-7d11-4cdf-8432-094e88e4f6b5', '66eaac47-6b82-41a1-86b1-66cc0c793531', 'Meses', 'Aprende los meses del año', '', '2', '2026-01-30 07:04:03.95774+00'), 
+('e50dc2b4-6a43-44ac-b8a2-3efe24ed71fe', '66eaac47-6b82-41a1-86b1-66cc0c793531', 'Verbos l', 'Aprende tus primeros verbos en LSM', '', '3', '2026-01-30 07:04:37.227511+00');
+
+-- 4.5. Lecciones
+INSERT INTO "public"."lessons" ("id", "course_id", "title", "type", "content_url", "spanish_text", "lsm_text_code", "order_index", "created_at", "image_url") VALUES 
+('002dd8c2-694a-4f97-ad27-af8053dce300', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Miercoles', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/miercoles.png', 'Miercoles', 'miercoles', '3', '2026-02-20 09:17:12.599498+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/miercolesr.jpg'), 
+('02c9be95-4652-4309-b083-c1fb51b9391d', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Mm', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/m.png', 'Mm', 'Mm', '13', '2026-01-30 06:43:25.373476+00', null), 
+('02f49d19-6efd-40e9-b9a1-a20698d224d2', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Dd', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/d.png', 'Dd', 'Dd', '4', '2026-01-30 06:40:48.800687+00', null), 
+('0866d4e7-ef5d-4855-bb38-8fb346b933d5', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Mes', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/mes.png', 'Mes', 'mes', '13', '2026-02-20 09:37:14.795716+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/mesr.webp'), 
+('0cccc62a-63e8-40a8-a2f5-0b67f55bbef5', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Ii', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/i.png', 'Ii', 'Ii', '9', '2026-01-30 06:42:07.625562+00', null), 
+('13b2afec-2af2-4a60-84f2-97f54edfc3d7', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Cc', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/c.png', 'Cc', 'Cc', '3', '2026-01-30 06:40:23.546158+00', null), 
+('1c0cc675-9d3b-4bb1-8fb5-42ec496f14c8', '00434505-cd36-4c99-a6e7-b04bfb97d7de', 'Adios', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/adios.png', 'Adios', 'adios', '2', '2026-02-20 07:44:46.568698+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/adior.png'), 
+('1e00ee2f-934b-472d-95c9-5679e72e5c0c', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Diciembre', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/diciembre.png', 'Diciembre', 'diciembre', '12', '2026-02-20 09:36:53.297006+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/diciembrer.png'), 
+('208f2bbf-3aa3-4cea-9fa5-739f7d5b1605', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Ayer', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/ayer.png', 'Ayer', 'ayer', '9', '2026-02-20 09:20:48.656769+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/ayerr.jpg'), 
+('2192cd11-41df-4778-a0a9-f3beac0ab09d', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'El', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/el.png', 'El', 'EL', '3', '2026-02-04 12:04:10.339098+00', 'https://www.quia.com/files/quia/users/lkennedy3241/Pronouns/El'), 
+('26142142-eda3-47e6-9605-21d695677185', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Jj', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/j.png', 'Jj', 'Jj', '10', '2026-01-30 06:42:21.85472+00', null), 
+('28a17a38-9c90-4907-bc81-880809569570', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Nn', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/n.png', 'Nn', 'Nn', '14', '2026-01-30 06:43:39.818759+00', null), 
+('2b1dce7b-f8a7-46b6-a057-1771c73ed918', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Junio', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/junio.png', 'Junio', 'junio', '6', '2026-02-20 09:34:30.719332+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/junior.webp'), 
+('2edd5969-6d4e-48f1-8281-4bf6cb321d76', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Xx', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/x.png', 'Xx', 'Xx', '11', '2026-01-30 06:53:46.654686+00', null), 
+('32dfaa38-738d-4fef-8171-05268ed36740', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Aa', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/a.png', 'Aa', 'Aa', '1', '2026-01-30 06:39:49.947718+00', null), 
+('349a8dc2-c77c-427b-8d43-9c9a37104791', 'e50dc2b4-6a43-44ac-b8a2-3efe24ed71fe', 'Agarrar', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/verbos%201/agarrar.png', 'Agarrar', 'agarrar', '1', '2026-02-20 10:21:29.972498+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/verbos%201/agarrarr.webp'), 
+('36eb68c9-477f-47da-88a0-537d980ad4a4', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Mayo', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/mayo.png', 'Mayo', 'mayo', '5', '2026-02-20 09:34:09.276788+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/mayor.jpg'), 
+('37a5bf61-e4c9-4389-a673-bceaa7127e18', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Octubre', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/octubre.png', 'Octubre', 'octubre', '10', '2026-02-20 09:36:00.995429+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/octubrer.jpg'), 
+('3dfa03ad-21ee-4657-ab5c-2d60a6ad5cd9', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Noviembre', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/noviembre.png', 'Noviembre', 'noviembre', '11', '2026-02-20 09:36:27.732454+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/noviembrer.webp'), 
+('3dfa98a7-b37d-405a-bb5b-89eec2f887a0', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Agosto', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/agosto.png', 'Agosto', 'agosto', '8', '2026-02-20 09:35:13.159067+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/agostor.webp'), 
+('3ebe2479-546b-4312-bc8e-c2f28ec6fec3', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Kk', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/k.png', 'Kk', 'Kk', '11', '2026-01-30 06:42:41.505503+00', null), 
+('412de804-12de-4483-8d45-dd51b25f3464', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Marzo', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/marzo.png', 'Marzo', 'marzo', '3', '2026-02-20 09:33:30.715876+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/marzor.gif'), 
+('44d50749-c759-4e55-9db4-08b289f3d867', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Año', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/ano.png', 'Año', 'año', '14', '2026-02-20 09:37:51.053683+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/anor.webp'), 
+('4a991fa1-ebbe-4d1d-adb9-98ed8d4f737c', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'Ellos', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/ellos%20.png', 'Ellos', 'ellos', '5', '2026-02-04 12:19:49.280227+00', 'https://www.educima.com/cdn-cgi/image/width=620,quality=85,format=auto/img/thumbnails/0/ellos-12140.jpg'), 
+('4aa0e495-970d-486f-a664-07dca812f25d', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Sabado', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/sabado.png', 'Sabado', 'sabado', '6', '2026-02-20 09:19:46.616714+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/sabador.webp'), 
+('4b76a03c-8b90-43ae-8556-bef5588beaa1', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Ññ', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/nn.png', 'Ññ', 'Ññ', '1', '2026-01-30 06:51:20.372968+00', null), 
+('61e912da-b2be-410c-bb3b-f6f067fd74ee', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Martes', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/martes.png', 'Martes', 'martes', '2', '2026-02-20 09:16:49.269182+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/martesr.webp'), 
+('6730c5e9-d197-4ec1-9e77-802f715b5aeb', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Ff', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/f.png', 'Ff', 'Ff', '6', '2026-01-30 06:41:18.213957+00', null), 
+('6a3606c0-0b80-444c-a960-06139f9be69f', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Jueves', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/jueves.png', 'Jueves', 'jueves', '4', '2026-02-20 09:18:53.218973+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/juevesr.webp'), 
+('72475c8f-93c7-4a36-887c-32589ee72a1f', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Zz', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/z.png', 'Zz', 'Zz', '13', '2026-01-30 06:54:20.388207+00', null), 
+('77e5eef9-4972-4bc3-8f58-fa1519662bd9', '00434505-cd36-4c99-a6e7-b04bfb97d7de', 'Gracias', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/gracias.webp', 'Gracias', 'gracias', '3', '2026-02-20 07:45:27.309155+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/graciasr.webp'), 
+('7aef914d-fa70-46cd-aae0-166988c3a0fe', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Uu', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/u.png', 'Uu', 'Uu', '8', '2026-01-30 06:53:11.189097+00', null), 
+('7d9fa09f-4a67-4201-90de-3a604309ba28', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Hoy', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/hoy.png', 'Hoy', 'hoy', '8', '2026-02-20 09:20:31.162428+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/hoyr.png'), 
+('9214ed24-2a51-4a7b-9bcb-ac2e9ec2c3a0', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Qq', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/q.png', 'Qq', 'Qq', '4', '2026-01-30 06:52:16.008558+00', null), 
+('9834a368-a4f7-42ec-89a1-d835120f9337', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'Yo', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/yo.png', 'Yo', 'Yo', '1', '2026-02-04 12:02:17.030248+00', 'data:image/webp;base64,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'), 
+('98a595b9-e41e-4bd1-aabd-f9ee7698f9ff', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'Ustedes', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/ustedes.png', 'Ustedes', 'ustedes', '7', '2026-02-04 12:20:59.87985+00', 'https://www.educima.com/cdn-cgi/image/width=620,quality=85,format=auto/img/thumbnails/0/vosotros-12135.jpg'), 
+('98c7d78c-40bf-4bd8-ab92-4d1a515c0553', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Febrero', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/febrero.png', 'Febrero', 'febrero', '2', '2026-02-20 09:33:10.439538+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/febreror.webp'), 
+('99b93032-9ddb-4b1f-b66b-caf7f6ec0704', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Pp', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/p.png', 'Pp', 'Pp', '3', '2026-01-30 06:51:57.353223+00', null), 
+('9b62a5d1-606a-4d41-8209-4f0663ec957e', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Ee', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/e.png', 'Ee', 'Ee', '5', '2026-01-30 06:41:01.172046+00', null), 
+('a3bc2347-419b-4e0a-8a7f-8c033ced03ca', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'Tu', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/tu.png', 'Tu', 'Tu', '2', '2026-02-04 12:02:59.58457+00', 'data:image/webp;base64,UklGRmoRAABXRUJQVlA4IF4RAABQSQCdASqWALQAPp1GnUslo6KhpFQNILATiWlEdyH4Fxvk7+fdn/+B/KLxI/O/2n8rP697BWT/qs/t/Qv+PfbP8l/Zv3O/u/tN/nPAn8e/U/9T6gX43/Mf8d593yfZB6z/nv9d6gXrd9I/zf91/cv/P+h7/Z/1X9jvcb65/6f+u/AB/L/6h/mfzc/wnyl/n/AU+4f7X2AP5Z/Tf9Z/if3h/130yfx//Y/zf+b/cX2rfnX94/6P+F/znyD/yX+pf7j++f539rPmq///t8/cn2Rv2H//5iv4Q/OVc7xwQGx1F2PLL5i7dyv7IPdx7vTf/+SxSmC93vR00p2t1MyqcgBXNpprXP6pNN+OgGj1+3Wwrb6S1vyDXjPLw5WgHjOKfySeBXqoDEG1IRZ8VW/lAIcJ4/12AIO92eL3XJFPPQn7PWx3JxW4TrzI2DWclWmiYsrpQ673U5+2NsJOAXSheLhy8YFjLFl7fnni3aI844/vEKIf/AMc7qjgUYBxJEeIAfq1LO8vShn6ptHqzJwlvpEfeXvqLCM6/CY+X3GIOyuoBDoK5l+bLZWZCHOxib+cuNjiJMab2Y6wpMyPmD5ZobRu5SxHIyEDiUscyg4ohrgRGOVzfGssrwhPqMd2zx6TOB46Bs2PApfYsEhERZ7nlKbQ+93omW56IaI7gu1mshPKVCAcXzXD9QyFIiEeRjYNNnSskmFFfcBcH8P/UqAnG8AyRuQHbvy4DTIm0VxjVKIbm98zFsJagUmwBWS+vVhPqF55m2KLP/8PTonCEqhCpZn7aXwAAP7kQiDuwKGNR1h6f76htxwvTmBP4icdgJ1yxetg5Id98zN0Am9pViyAESE8gtxb8K37svjoD+m5V7BArw6MkojWp+zUmMFoao19lWplIiLf1BB/m00Q7hdwoU4yzFoKLX2X6LRvYTOVb4d42t6Cepzo88Hqv0Sg7tRFQTnE3WMZ7xJT6f47vHw15O858gKpezskWj/8DlbnwOF6jTYo+EQHgsG0ESdFNOsWuA5uEqOJo8IsbwDHw1kHHmSnEXEtW/9bqWSefrVE+D4qtaIOmGnpoB3o2k5to24lPb2jA4Ige7HwcR3UhLQeGyiBDe6xaI2+Rrg73piImqWbWGl4gejTebn6zkSeZdofhi3/t5MAv/ldGzPmpjY1mWT2ArDU2Z2iqWjXLBB7Vm9gfGImSLq7Y+3hjw9OLwh0UJmWYyySqV1Obgc/s2fbpNZZqWvZWVHeVfBjRt7Nln0CqDQawFWD/Ct1ZwDMmJw5AFTmxRPVjNwJUht55zv6Kofw5ud578qP4wdw/hYAj3SFsbl3wz4WTKGcI+W3WaR4PLFEhqucq6czlNKQNqU1DCh3+HVZx843vE8KxJRmFZXigZrnF5K44/LuRLQfuega/93uC+09y7BC58nYXOZpcyk8nXq2c81XEowLCk55nZheD59RSQNOMe5hHKH8JckKzoSFhUdYDAPlGYrfJ+hPkvX/Bjrg+K7sAeaWVk/isM36bZ7soGi2LcGNbIKAJA1r6ugkWvYgK6u4rN24GtLGA9fAb9eZnt6JNCY9uiqa5CKeECW2mLwc9MJp1fLHk4OLWZcKT4kVaDSk6Nb0VFuJsGCx3dczCtBdmnNBDSByP0MGdNDRUw8hQWS/UDGxTRtF0eJ3k4NvVLWe/pZrDQYmVSW4jItM+GV+fqwL+ZdARXna6+2lfr3HJIcbgxBKffxU5hbbe7cqO92yHh35r6F0qlxGL/uABu3Tu2WAh4m0lmMyS3kHueN8Yw8okoWuXKd1qOgevEqd6G2wNPtJvLxpWCLcFf6Hm1P/6A4bB1kBrjFOCHrbvCtpyGPFmhGcrhMlpimwjC2GN2uaijPwUkwUkfDD1BqFKHHsbleFmbN5L30A6DMqo1FTqsl8vq0+nynWECy0JhAcr9rjxVrBF5/0nTazng07EgPTuHEoR+yvtZ8x6NXTxptcN5z/7gIZvEdMbYHkOpGnAEJFKymahBSitufhBvxh46yj+v0sHv1aXupH11Pm1BHAVvx0X42TDzdNR8T90Q10px2HlkDRYM8ZG++z/AwvhwIQtE6adBVku6WQ2GFSidI8cps1yNkq3Blvo9Te076L1syuLoBaeZB07rUGk/5tJHqt8+qjQePLRwSjXQ9VwqaxrPsZUUdiqY3MfW77/2t4uRop/96YBowIBgSeqwSzpGw0Sp9CfAzVec0ohW8M7wgDIM3cL3IMe2xq4xlGQuxeLoqAN6GHYUm/sdjh3ut7twDXcgRxmliPTnYgjzKL8+oXlhyAyhMc8AOJWKyz/hGSDoorC+56VdJOf0Std2u6cxZ0NF6Pp39kdeQKzReU1k2ni07xPfWwYMTaYC6PfHYgjWbELP7osoY1hIlgVqNLbld5asHtB110d/qK7yFBQYs9wy5/LdcRUICjy6xsLIhaI7nDjfqQ868SvC74LymCaifZQgSecu4G6y7AmTvpw3/OY9eiUDf4j37V8nZG7PUaoxJdeuVk/jzH+8nbgRGsnctAEUs0/QApyuP6lDR0izxMWQ0nFCwPh14zRXzDzNsoVwv6NK5foI3gaUsyLuiH7amemZ/KwxZqVoFsc8PtwnCOw+BjNq8OmvhjmKukjTn3hEf4ivWKMPgY6oBMUUh1oilcWbPkiSsJ32VvqHwDkNT+mGs4/AFdOk87Mvc7XBYnylXrx4mg6dIwI2V18sthyzQK7aHeT8dcFRKaZmYHRp+qT5QIJ+LmV7lKTvWEHh6OQQoWMvPXLrT5oq8FZ71dP5ZJOD6SiHg9nPWu6xqV/fHjm1tw+2X80TSYNtI3aXQXSL6IqwrZ8Z+dfqgIGSEbbf3fR/h5ZsDSwQag1eTavsh6fJe3qW1bMjTUH+hMTdPVcnfhAz1FvKvmNwv7r9fhCqdbdfEDbb7OGBr2QT38asAaUY/loH5NN++j+2G9MyEN6uGeLx04mgC5P0ozgF2oRTqeVRQMLoXUIqrshQXuExQF7lJLPqoclDBj2LA0X8h1yw02w9ir7ap05hvIhVGet/wxsVBvqLn2+f8ZUWU3qkbK0kEuGLLGF8A3kIb+Gh8RJyeOQiPmIeK4vHO5tjsBWL/b7/Owyk8t9+9zDAD7x0F6IavVT/Gd5UXN9ijQJIq16mVn7cxSjTzHGl0lKGYzqymkjWDrvgVFc1cHosyTZ3sGxdCSeYr0NuCyrs61AH/IM5AAw7hhnM8Nu0nCP/XvnwdoPECa5NGYZUOZ2y7ZkRzCfYZJYBFTllG9NvJK3vn8lUsaoholwV+ms1y53rcZ5s49p7B/xDWqoKTB/ToHZ4bAizer1Mn+WLuv30v1q8HdDKaldDKs+dIWgXPpMXHTeVuuN3kqTzmXPBHOb/2zJMAThPOPIDiVpVk8eWw8jOH7yBXCczq/iiXcWddrC9677W+p0tjiJI0xuD6W0ClE1jd5RnKkxaDcKFU8ytuRdLdLcfOnzwRNQODxEs29O89M83jHLo9zHjeIMWADpgmSWyeNQAsNTAWFpWrHyvbDzTYCAEmhZdpcKX6d9Lxx+fC+/dEfyT9ak37rrAvdKV3dDKh2ckdAi9toBDrFDpDI/Xh4d8O8kaig7WvYoPQZgOR1LW/9T/2py6EA6OFiOuw7kTY7R3MlWSyikOnNk5FQApg7m8bf9LF3i+7Srw5ocFJWnq3OJTO//gOhmIRNIr+dtYNpH9QpTCHHz+A+NbphkFZ4KSxy/RvOmoLgIee/fJvzA3OHzGjgc8qHssM1tbmrhUETh38IKjX9/6EadiKqs2yI99TI8boUd9hN9JZhmu/ET3knvltm0+OcG1HWvgmFApPpgDv51awcmoPII76CWwUTjhKIJi91ikBDV0tDeKHiGoYq4L5RV6/Z4KKIVTDBva3l4e/qsheXy0tPBXz4qlsvK/P5L4SjgByUCvKQyGoKT+tz/GbNmsmJyIb3xlnjy0kdB81u1Z10GaP4vuE81DOqWArNazpgWma5MP6ALwTz3UklVF/IdW+3X2VKHp5SjulH5SNVVykshCXTfXQiEGcLYBmd0u764VhPoQVga3zjOcms0dbiSHdQN06m7IJtjr+oRCEsgCGGgmZBSdpK0bXYPY5cjypu1uWRlvOKI1RtZ10SeLjvrHiEPUUF32qk/x/rGxZU0jjTEQi2oFwbuMAI8WLp02ZVsNOlEC8X2HjXgj7qr/MJsF7oKeOtw9pzuuPSHfelJRSEden/XY370SGMY/qG7OgDSfLNisWQETwEq2G1eBivo4b+y5d9AKI+Lx04cdyJUeqEc1KK43nAFPhYoi8lwngNREUo4JWbqVgc1PmSrL/jf2FH/hGu8BCi9dEI1+rORV2MELvwucQ4UZpDgiz5NBNrF7FESJ9H7kZzjHMy8Q1q9VtLfz9/QFA0HgMqjZEKS0eqJ3RQHnuzujE+mqGFz8syM/noCi62GkjzJtnPxpWk6tZ4pak1IoMwgU11znLncpQqbQWSGFNiBk60tXeVtWUpatunWTzUsBAzWrvj1xeR83+1xF1x9FQ35pI9YsxFa/cffY+Zq359WW6L2+dSLe282pN7pJ8OVz7WY9goN3+b6rZnNuiiGq2KXrMAeVls/nSqcigcdnyqrKFK4At+Ya+AEwssAyFmmhOzLvv3a5WbpnmtIcTzzy6onoCM73mRWCptKyDmMP/OQ8PzanNy22uopFeuv7YkvZ9ZJSHRrdHAVULgULiDR3WfssTauSQbBkvOyJ9JWFJnPURJ1xHdejVtPAuhjx4hKSAqpsaZh/9wq3w2jAf1zbyCOGmnnvjdCoNmCRBZnsqvz5eEsDmzGWTgoJ89kfKITzXy6lYzFzO/Wvz8Ql6pnYM9pilcbyXSCtYByJA73zQig8B3QelkjtAn6+KD/Ll7Mpf0gRps3DdQlZl3vJDgLdWxwu3Lg0JBUlf4BhhrPpf3m0zzJ+mA55fKu9PwfjLi+'), 
+('a6511d31-b398-4cbf-a7a4-a3e154b7d403', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Yy', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/y.png', 'Yy', 'Yy', '12', '2026-01-30 06:54:01.395014+00', null), 
+('a7b92604-a102-4400-bfed-12c6347f8b8b', '00434505-cd36-4c99-a6e7-b04bfb97d7de', 'Perdón', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/perdon.jpg', 'Perdón', 'perdon', '5', '2026-02-20 07:47:01.148144+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/perdonr.webp'), 
+('aa13de0f-d49d-4182-809a-1c8aea8630c9', '00434505-cd36-4c99-a6e7-b04bfb97d7de', 'Hola', 'video', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/hola.mp4', 'Hola', 'Hola', '1', '2026-02-20 07:32:00.251938+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/holar.webp'), 
+('abbf8856-b835-44be-a182-2df2cca52fcc', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Vv', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/v.png', 'Vv', 'Vv', '9', '2026-01-30 06:53:22.750859+00', null), 
+('ad6336bf-9017-4378-a087-ddda633056d5', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'Nosotros', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/nosotros.png', 'Nosotros', 'nosotros', '6', '2026-02-04 12:20:21.798649+00', 'https://www.educima.com/cdn-cgi/image/width=620,quality=85,format=auto/img/thumbnails/0/nosotros-12137.jpg'), 
+('af4ee619-7099-40fa-8566-ec7ed7336ba5', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Tt', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/t.png', 'Tt', 'Tt', '7', '2026-01-30 06:52:57.072607+00', null), 
+('b30b74e1-baa8-48f6-a261-8fbf4bcf24cd', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Oo', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/o.png', 'Oo', 'Oo', '2', '2026-01-30 06:51:41.301652+00', null), 
+('c4c07ffd-528b-4afc-af61-7d0035f7ed16', '00434505-cd36-4c99-a6e7-b04bfb97d7de', 'Por favor', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/porfavor.png', 'Por favor', 'por favor', '4', '2026-02-20 07:46:03.238722+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/porfavorr.avif'), 
+('c9b31fa5-1ed9-490f-80b6-a0d48501c07a', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'Ella', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/ella.png', 'Ella', 'ELLA', '4', '2026-02-04 12:18:47.423284+00', 'https://www.educima.com/dibujo-para-colorear-ella-dl12138.jpg'), 
+('cf73a30c-3ec2-4740-b5af-81d9b48d4f39', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Julio', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/julio.png', 'Julio', 'julio', '7', '2026-02-20 09:34:51.570596+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/julior.webp'), 
+('d7e6651f-8d23-46b1-9717-3a91c324ae98', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Ll', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/l.png', 'Ll', 'Ll', '12', '2026-01-30 06:43:05.673544+00', null), 
+('d9d4b9da-97fb-458a-a42a-4b519ccb7884', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Lunes', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/Lunes.png', 'Lunes', 'lunes', '1', '2026-02-20 09:16:28.582809+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/lunesr.jpg'), 
+('e0d82fa9-c306-4219-a4b8-f54d8632ac13', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Bb', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/b.png', 'Bb', 'Bb', '2', '2026-01-30 06:40:05.334536+00', null), 
+('e5e419d6-94e7-4a12-804e-d15b94d15acc', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Hh', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/h.png', 'Hh', 'Hh', '8', '2026-01-30 06:41:46.789637+00', null), 
+('e61f73c4-c3b1-4e9d-ad4f-26338bf45e59', '00434505-cd36-4c99-a6e7-b04bfb97d7de', 'Mal', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/mal.png', 'Mal', 'mal', '7', '2026-02-20 07:48:37.079863+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/malr.jpg'), 
+('e6520183-f119-45c0-b5a5-aa73c0bcdbec', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Gg', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/g.png', 'Gg', 'Gg', '7', '2026-01-30 06:41:31.344752+00', null), 
+('e7bf6b86-f8e0-4480-ae05-7a0fdf5ff2cf', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Ss', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/s.png', 'Ss', 'Ss', '6', '2026-01-30 06:52:44.123113+00', null), 
+('ed8d482a-c5e7-4c5a-b9a8-4b483c6e075a', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Viernes', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/viernes.png', 'Viernes', 'viernes', '5', '2026-02-20 09:19:18.858011+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/viernesr.webp'), 
+('f33db55e-e73b-4e94-bcb6-cd19937e7778', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Rr', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/r.png', 'Rr', 'Rr', '5', '2026-01-30 06:52:29.833381+00', null), 
+('f8792876-f0b3-4052-9dd0-84f37568bce8', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Abril', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/abril.png', 'Abril', 'abril', '4', '2026-02-20 09:33:49.873691+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/abrilr.webp'), 
+('f90358f9-517a-43b6-a459-b672c95ef74d', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Mañana', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/manana.png', 'Mañana', 'mañana', '10', '2026-02-20 09:21:29.733294+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/mananar.png'), 
+('f9e8823f-6569-4fe2-84c8-60950323188c', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Enero', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/enero.png', 'Enero', 'enero', '1', '2026-02-20 09:32:50.150005+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/eneror.webp'), 
+('fac06574-0415-464a-bd6c-5e42f01fad21', '1429a520-94ea-4145-8b28-f58856f1eaff', 'Domingo', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/domingo.png', 'Domingo', 'domingo', '7', '2026-02-20 09:20:11.38139+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/domingor.webp'), 
+('fda59d3f-97c7-428a-8394-5fa76385155f', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Ww', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/w.png', 'Ww', 'Ww', '10', '2026-01-30 06:53:33.334577+00', null), 
+('ff3466dc-5284-45dc-bc9f-eb3538824d1d', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', 'Septiembre', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/septiembre.png', 'Septiembre', 'septiembre', '9', '2026-02-20 09:35:36.516163+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/septiembrer.webp'), 
+('ffcceab0-39cf-4ad8-8f7a-96e6c367533b', '00434505-cd36-4c99-a6e7-b04bfb97d7de', 'Bien', 'image', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/bien.png', 'Bien', 'bien', '6', '2026-02-20 07:47:28.41024+00', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/bienr.jpg');
+
+-- 4.6. Preguntas
+INSERT INTO "public"."quiz_questions" ("id", "course_id", "question_text", "media_url", "options", "correct_answer", "created_at", "question_type") VALUES 
+('0191498c-93f6-4b37-a500-004db4d22368', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Que significa esta seña?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/r.png', '["P","R","Q"]', 'R', '2026-01-30 06:55:44.132539+00', 'text'), 
+('01c25236-91ea-4106-a46b-8c8c25e9b13f', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', '¿Cual es el mes siguiente a este?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/marzo.png', '["Marzo","Abril ","Mayo"]', 'Abril ', '2026-02-20 19:17:08.266764+00', 'text'), 
+('01f246e0-c734-45d1-b047-6480d05f10d8', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Que letra es la de la imagen?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/k.png', '["G","K","N"]', 'K', '2026-01-30 06:48:29.083928+00', 'text'), 
+('09ddeaec-bcb1-44c1-910a-72c15255c71c', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'Esta seña es yo?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/nosotros.png', '["Si","No","No se"]', 'Si', '2026-02-04 12:23:42.191762+00', 'text'), 
+('10a5a39e-acdf-45b7-b619-205a3d1f0a55', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Esta letra es.....', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/s.png', '["S","O","X"]', 'S', '2026-01-30 06:55:03.2943+00', 'text'), 
+('18839ed6-304a-4fdf-9911-ee8c345ee6b9', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'Que seña es esta?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/el.png', '["Tu","Ustedes","El"]', 'El', '2026-02-04 12:24:59.374532+00', 'text'), 
+('1b7a758d-cf4a-4fd7-97a7-c432d8d0f703', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Que letra es esta?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/v.png', '["U","W","V"]', 'V', '2026-01-30 06:56:46.606295+00', 'text'), 
+('1c62ae3b-4144-441a-9b91-b01d38510ba6', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Que significa esta seña?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/f.png', '["D","L","F"]', 'F', '2026-01-30 06:46:01.424965+00', 'text'), 
+('35190f64-32e4-48e0-af7d-161a3458fc13', '00434505-cd36-4c99-a6e7-b04bfb97d7de', 'A que expresion se refiere esta sena?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/adios.png', '["Hola","Por favor","Adios"]', 'Adios', '2026-02-20 07:52:23.862908+00', 'text'), 
+('36820718-daee-438a-b624-3d27d1b30a37', '1429a520-94ea-4145-8b28-f58856f1eaff', '¿Qué seña es esta?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/domingo.png', '["Lunes","Sábado ","Domingo "]', 'Domingo ', '2026-02-20 19:12:47.425701+00', 'text'), 
+('5d595254-ca9a-4b7f-9ca4-c6ea236c4f3a', '1429a520-94ea-4145-8b28-f58856f1eaff', '¿Qué seña significa hoy?', '', '["https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/ayer.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/hoy.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/manana.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/sabado.png"]', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/dias/hoy.png', '2026-02-20 19:15:56.555283+00', 'image'), 
+('656c5960-87d1-48ce-8977-4be59874c4b6', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'Que seña significa nosotros?', '', '["https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/tu.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/nosotros.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/ustedes.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/yo.png"]', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Pronombres/nosotros.png', '2026-02-11 17:53:31.315924+00', 'image'), 
+('661dc1d9-8df0-41b9-b57d-a7f7cd775d31', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'Esta seña es...', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/y.png', '["W","Y","Q"]', 'Y', '2026-01-30 06:57:35.970168+00', 'text'), 
+('6ae4fb62-d09e-4ee2-9e7c-2735f3b1d094', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Esta letra es....', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/h.png', '["H","L","J"]', 'H', '2026-01-30 06:47:31.850712+00', 'text'), 
+('844a81eb-1b44-4058-99a0-bd9925e72128', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Que letra es esta?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/m.png', '["M","E","B"]', 'M', '2026-01-30 06:46:35.713199+00', 'text'), 
+('9766b8b3-c6d8-4306-a79c-e7cac0290f57', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'Cual de las siguientes señas es la letra a?', '', '["https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/a.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/h.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/l.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/m.png"]', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/a.png', '2026-02-09 06:34:35.491952+00', 'image'), 
+('bd6472f4-b4a4-4e46-bb42-b8f5a37d91e5', 'e450af94-7d11-4cdf-8432-094e88e4f6b5', '¿Qué seña significa enero?', '', '["https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/enero.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/diciembre.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/julio.png","https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/marzo.png"]', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/meses/enero.png', '2026-02-20 19:18:28.027139+00', 'image'), 
+('e1b2899b-7acf-4398-8b84-d90981c9500e', '00434505-cd36-4c99-a6e7-b04bfb97d7de', 'Que expresion es la siguiente?', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Saludos%20y%20Expresiones/perdon.jpg', '["Perdon","Bien","Adios"]', 'Perdon', '2026-02-20 07:50:14.068393+00', 'text');
+
+-- 4.7. Progreso de Usuario
+INSERT INTO "public"."user_progress" ("id", "user_id", "course_id", "is_completed", "quiz_score", "last_accessed_at") VALUES 
+('27107d96-2efd-47d7-b8b4-0fe7adc06991', '97c96103-3d47-438b-9b90-6c7a9f718ba7', '1429a520-94ea-4145-8b28-f58856f1eaff', 'true', '10', '2026-02-23 01:43:57.603+00'), 
+('6989da49-0834-4124-9db1-e4a25e9b7862', 'bf428441-729d-4120-a711-25bc4721b66e', '91c9e871-b2f3-4f49-b0da-a4e0ad33dbe9', 'true', '4', '2026-01-30 06:58:41.743+00'), 
+('d419e191-ca1b-492b-9f89-7338becd64ed', 'bf428441-729d-4120-a711-25bc4721b66e', '73db59e4-7ebe-4a4f-aa6d-e51cf7cf65ac', 'true', '2', '2026-02-11 05:00:30.762+00'), 
+('e46ab599-4bb4-43da-a5f3-2c33f680f6c0', 'bf428441-729d-4120-a711-25bc4721b66e', '489c2037-b47a-4ef1-a682-50b6ec9289eb', 'true', '8', '2026-03-06 17:58:52.747+00');
+
+-- 4.8. Diccionario - Categorías
+INSERT INTO "public"."dictionary_categories" ("id", "name", "image_url", "created_at") VALUES 
+('01e82352-a406-4550-a277-cc155bd75614', 'Abecedario', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/categoria-abecedario.png', '2026-01-19 19:46:41.182313+00'), 
+('2af39c06-084c-436b-b6c7-e68b0b6e1444', 'Saludos y Expresiones', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/categoria-expresiones.png', '2026-01-21 17:57:11.718741+00'), 
+('2cb10eee-e94e-46bb-b203-1dde4555a66b', 'Pronombres', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/categoria-pronombres.png', '2026-01-30 06:16:39.557002+00'), 
+('433cd658-7b42-4242-8983-848614c7bc13', 'Cosas de la Casa', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/categoria-casa.png', '2026-01-14 15:08:01.135135+00'), 
+('a9097805-2020-4b47-b91a-a02c8b1e54de', 'Animales', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/categoria-animales.png', '2026-01-14 15:08:01.135135+00');
+
+-- 4.9. Diccionario - Entradas
+INSERT INTO "public"."dictionary_entries" ("id", "category_id", "word", "media_url", "media_type", "definition", "created_at") VALUES 
+('0868693e-6c23-46aa-b158-f935212617d2', '2cb10eee-e94e-46bb-b203-1dde4555a66b', 'El', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Pronombres/el.png', 'image', null, '2026-01-30 06:17:30.478944+00'), 
+('101d1e70-5b13-4952-ab09-f2411ce8d19a', '01e82352-a406-4550-a277-cc155bd75614', 'J', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/j.png', 'image', null, '2026-01-30 03:18:18.930363+00'), 
+('1a757077-3561-4736-bf18-e886c9fa257b', '2cb10eee-e94e-46bb-b203-1dde4555a66b', 'Ustedes', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Pronombres/ustedes.png', 'image', null, '2026-01-30 06:18:39.671103+00'), 
+('1b3b8503-5a59-46a9-9d4d-e8916487a717', '01e82352-a406-4550-a277-cc155bd75614', 'U', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/u.png', 'image', null, '2026-01-30 03:20:46.385297+00'), 
+('242b4660-3fec-4528-9c9a-0daeaf997971', '01e82352-a406-4550-a277-cc155bd75614', 'P', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/p.png', 'image', null, '2026-01-30 03:19:51.698476+00'), 
+('27a5ff01-045d-47a4-b80d-8c0f5418941d', '2cb10eee-e94e-46bb-b203-1dde4555a66b', 'Ellos', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Pronombres/ellos%20.png', 'image', null, '2026-01-30 06:18:09.917831+00'), 
+('2d1462b1-aa9a-4464-8a6a-beaa7d4ce5c1', 'a9097805-2020-4b47-b91a-a02c8b1e54de', 'Gato', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Animales/gato.png', 'image', null, '2026-01-14 15:08:01.135135+00'), 
+('33dd2226-d0f6-4357-8841-3ae008def5d1', '01e82352-a406-4550-a277-cc155bd75614', 'X', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/x.png', 'image', null, '2026-01-30 03:21:22.480112+00'), 
+('3fc72ad6-7312-42bb-8337-be4651d6e213', '433cd658-7b42-4242-8983-848614c7bc13', 'Lampara', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Casa/lampara.png', 'image', null, '2026-01-30 06:15:12.717759+00'), 
+('402a17dc-792d-4c02-9457-03c56911d268', '01e82352-a406-4550-a277-cc155bd75614', 'E', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/e.png', 'image', null, '2026-01-30 03:07:51.60229+00'), 
+('49ab6e16-6e3a-4e74-9c5c-4563ff077dde', '01e82352-a406-4550-a277-cc155bd75614', 'L', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/l.png', 'image', null, '2026-01-30 03:18:45.184456+00'), 
+('4bb5e373-b93b-43a3-a59e-a8ae67c39255', '01e82352-a406-4550-a277-cc155bd75614', 'R', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/r.png', 'image', null, '2026-01-30 03:20:11.545058+00'), 
+('4cb20a20-2a78-43ce-ad4b-f7325e12e532', '01e82352-a406-4550-a277-cc155bd75614', 'F', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/f.png', 'image', null, '2026-01-30 03:08:03.669017+00'), 
+('51962b1d-78bd-4be4-9de8-99e273af02bd', '2cb10eee-e94e-46bb-b203-1dde4555a66b', 'Tu', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Pronombres/tu.png', 'image', null, '2026-01-30 06:17:19.919368+00'), 
+('6f8bc5a7-5d40-4978-b48c-85834146730e', '01e82352-a406-4550-a277-cc155bd75614', 'H', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/h.png', 'image', null, '2026-01-30 03:17:53.593914+00'), 
+('7580b9dc-860c-48d1-9dda-ec785e1498e7', '01e82352-a406-4550-a277-cc155bd75614', 'Q', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/q.png', 'image', null, '2026-01-30 03:20:01.080515+00'), 
+('7599e358-a64c-476d-884e-a1b3c7f1fadc', '2cb10eee-e94e-46bb-b203-1dde4555a66b', 'Ella', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Pronombres/ella.png', 'image', null, '2026-01-30 06:17:49.68036+00'), 
+('75e69fd7-bd29-4922-ae11-ad02337923c4', '2cb10eee-e94e-46bb-b203-1dde4555a66b', 'Nosotros', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Pronombres/nosotros.png', 'image', null, '2026-01-30 06:18:26.562555+00'), 
+('76853c23-9fff-4552-8468-94c1f68c87e9', '01e82352-a406-4550-a277-cc155bd75614', 'V', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/v.png', 'image', null, '2026-01-30 03:20:57.072248+00'), 
+('77eac5eb-9df6-4005-b0fb-fd5da556bb8b', '01e82352-a406-4550-a277-cc155bd75614', 'G', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/g.png', 'image', null, '2026-01-30 03:17:40.20365+00'), 
+('82ed0153-f19b-4acc-952f-9db6c7e28998', '01e82352-a406-4550-a277-cc155bd75614', 'Ñ', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/nn.png', 'image', null, '2026-01-30 03:19:26.270341+00'), 
+('85e95872-67e5-4e3c-8617-1a452f1ca848', 'a9097805-2020-4b47-b91a-a02c8b1e54de', 'Pez', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Animales/pez.png', 'image', null, '2026-01-30 04:46:29.82184+00'), 
+('895d92ab-9e69-4179-9692-c9004183bd2d', '01e82352-a406-4550-a277-cc155bd75614', 'T', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/t.png', 'image', null, '2026-01-30 03:20:36.390039+00'), 
+('89e8cf74-b713-4e9c-974b-134e5afaf222', '01e82352-a406-4550-a277-cc155bd75614', 'W', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/w.png', 'image', null, '2026-01-30 03:21:09.071632+00'), 
+('8b5b8942-c099-439e-b3c5-741fa98d82c4', '01e82352-a406-4550-a277-cc155bd75614', 'K', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/k.png', 'image', null, '2026-01-30 03:18:31.100787+00'), 
+('8c1b887c-e490-44ee-b30c-f8352c81eece', '2cb10eee-e94e-46bb-b203-1dde4555a66b', 'Yo', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Pronombres/yo.png', 'image', null, '2026-01-30 06:17:08.143427+00'), 
+('94aa111a-ed01-4a79-b38b-793a386bd13f', '433cd658-7b42-4242-8983-848614c7bc13', 'Cama', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Casa/cama.png', 'image', null, '2026-01-14 15:08:01.135135+00'), 
+('976f0cd2-b1a6-4ecc-bb41-f3d747c0a9ae', '01e82352-a406-4550-a277-cc155bd75614', 'I', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/i.png', 'image', null, '2026-01-30 03:18:04.253273+00'), 
+('9a576000-819d-4f4b-b2e7-52fe4ef1239a', '01e82352-a406-4550-a277-cc155bd75614', 'A', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/a.png', 'image', null, '2026-01-30 03:06:39.592871+00'), 
+('aa1be26b-00e4-4ec2-a7dd-0286937463b8', '01e82352-a406-4550-a277-cc155bd75614', 'Z', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/z.png', 'image', null, '2026-01-30 03:21:45.985494+00'), 
+('ab7c1c01-b452-4589-a461-68d2f1a514a8', '01e82352-a406-4550-a277-cc155bd75614', 'B', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/b.png', 'image', null, '2026-01-30 03:07:06.123012+00'), 
+('ba0723a0-881d-4af4-addb-bf54e3bbea85', '01e82352-a406-4550-a277-cc155bd75614', 'D', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/d.png', 'image', null, '2026-01-30 03:07:32.952508+00'), 
+('ba80916c-9dea-4ec3-a548-42b77d46e82f', '433cd658-7b42-4242-8983-848614c7bc13', 'Mesa', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Casa/mesa.png', 'image', null, '2026-01-14 15:08:01.135135+00'), 
+('ced230e1-f71b-4a05-b57e-c87813b4e539', '01e82352-a406-4550-a277-cc155bd75614', 'M', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/m.png', 'image', null, '2026-01-30 03:18:54.772027+00'), 
+('d284ac84-d226-40dc-bb32-cbf184e839a7', '433cd658-7b42-4242-8983-848614c7bc13', 'Escritorio', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Casa/escritorio.png', 'image', null, '2026-01-30 06:14:52.125326+00'), 
+('da245c3c-ccca-492f-8e51-7e63409a702d', '01e82352-a406-4550-a277-cc155bd75614', 'C', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/c.png', 'image', null, '2026-01-30 03:07:19.445366+00'), 
+('dd640616-6354-4c32-88cb-cb5d8356afc3', '01e82352-a406-4550-a277-cc155bd75614', 'S', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/t.png', 'image', null, '2026-01-30 03:20:21.528038+00'), 
+('e333ac0e-ce4b-429f-84f7-0f7b843c2f96', 'a9097805-2020-4b47-b91a-a02c8b1e54de', 'Perro', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Animales/pato.png', 'image', null, '2026-01-14 15:08:01.135135+00'), 
+('e476af75-1f1f-49d7-a7b9-2d9d1f42f6fa', '433cd658-7b42-4242-8983-848614c7bc13', 'Cajon', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Casa/cajon.png', 'image', null, '2026-01-30 06:14:13.600868+00'), 
+('e95cc600-b07d-46c1-8ef6-19fadcec736d', 'a9097805-2020-4b47-b91a-a02c8b1e54de', 'Pato', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Animales/pato.png', 'image', null, '2026-01-30 04:46:18.457409+00'), 
+('f2c81970-d781-4058-aa06-f2971de15486', '01e82352-a406-4550-a277-cc155bd75614', 'N', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/n.png', 'image', null, '2026-01-30 03:19:05.461684+00'), 
+('f3ad415f-54c0-49bd-a272-b1a0324919ad', 'a9097805-2020-4b47-b91a-a02c8b1e54de', 'Pajaro', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Animales/pajaro.png', 'image', null, '2026-01-14 15:08:01.135135+00'), 
+('f8abc265-742d-4f8a-b357-36735e83fb00', '01e82352-a406-4550-a277-cc155bd75614', 'Y', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/y.png', 'image', null, '2026-01-30 03:21:33.330701+00'), 
+('fb8a389a-3ebf-426c-9edf-c814074f22af', '01e82352-a406-4550-a277-cc155bd75614', 'O', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/cursos/Abecedario/o.png', 'image', null, '2026-01-30 03:19:40.393986+00'), 
+('fee70396-8998-4dbc-bb9d-85f17503b58d', '433cd658-7b42-4242-8983-848614c7bc13', 'Escaleras', 'https://mqloxtnhyefawnoiwpeu.supabase.co/storage/v1/object/public/multimedia/diccionario/Casa/escaleras.png', 'image', null, '2026-01-30 06:14:28.831234+00');
+
+-- 4.10. Posts
+INSERT INTO "public"."posts" ("id", "user_id", "content", "image_url", "likes_count", "created_at") VALUES 
+('16de432e-0b10-4010-a395-357a1b40c075', '97c96103-3d47-438b-9b90-6c7a9f718ba7', 'Buenos dias :D', null, '0', '2026-02-04 16:52:26.950765+00'), 
+('6e788397-a1c5-4a07-9bc6-6aabbbe93f92', 'bf428441-729d-4120-a711-25bc4721b66e', 'HOLA', null, '0', '2026-02-19 20:12:01.380217+00'), 
+('7ca749e2-1a5e-4dc3-8d50-20d5e175e2fa', '97c96103-3d47-438b-9b90-6c7a9f718ba7', 'Hola como estan?', null, '0', '2026-01-19 19:16:26.417228+00'), 
+('9ba44c51-63cc-4a0b-b2a6-55d8ab5eee47', '97c96103-3d47-438b-9b90-6c7a9f718ba7', 'Primera instalación de la App :)', null, '0', '2026-01-28 18:32:51.456008+00');
+
+-- 4.11. Post Likes
+INSERT INTO "public"."post_likes" ("user_id", "post_id", "created_at") VALUES 
+('4a9c034e-b05b-442c-a7af-f1cdb2342d5c', '7ca749e2-1a5e-4dc3-8d50-20d5e175e2fa', '2026-01-19 19:18:59.08048+00'), 
+('97c96103-3d47-438b-9b90-6c7a9f718ba7', '7ca749e2-1a5e-4dc3-8d50-20d5e175e2fa', '2026-01-19 19:38:09.816853+00'), 
+('bf428441-729d-4120-a711-25bc4721b66e', '7ca749e2-1a5e-4dc3-8d50-20d5e175e2fa', '2026-01-21 19:26:55.223338+00');
+
+-- 4.12. Post Comments
+INSERT INTO "public"."post_comments" ("id", "post_id", "user_id", "content", "created_at") VALUES 
+('135db3ca-9700-494a-9f9b-b4e1f5ea877a', '7ca749e2-1a5e-4dc3-8d50-20d5e175e2fa', '4a9c034e-b05b-442c-a7af-f1cdb2342d5c', 'Hola todo bien, aprendiendo las bases del LSM', '2026-01-19 19:29:53.792963+00'), 
+('7ac5bdcf-163e-4d44-b98f-5cc27294ddb5', '6e788397-a1c5-4a07-9bc6-6aabbbe93f92', 'bf428441-729d-4120-a711-25bc4721b66e', 'Hola ', '2026-02-19 20:12:27.632662+00');
